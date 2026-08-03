@@ -1,0 +1,25 @@
+# Archivos compilados de la serpiente
+__pycache__/
+*.py[cod]
+*~
+
+# El inframundo de Buildozer y empaquetados
+.buildozer/
+bin/
+*.apk
+*.aab
+
+# Bases de datos mastodónticas y progreso local
+*.csv
+lichess_db_puzzle.csv
+memoria_puzzles_global.json
+perfiles_entrenamiento.json
+
+# Basura de los editores y sistemas operativos
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Assets
+assets/
