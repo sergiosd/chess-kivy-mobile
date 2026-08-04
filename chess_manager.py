@@ -13,10 +13,20 @@ class ChessManager:
         self.info_puzzle = None  # NUEVO: Variable para guardar toda la información
 
     def cargar_puzzle(self, puzzle):
+        """Carga el FEN y prepara el tablero ejecutando el movimiento inicial del rival."""
         self.board.set_fen(puzzle['fen'])
         self.solucion = puzzle['moves']
-        self.info_puzzle = puzzle  # NUEVO: Guardamos el diccionario completo
-        self.paso_actual = 0
+        self.info_puzzle = puzzle
+
+        # EL TRUCO MAGISTRAL: El primer movimiento de la lista es del enemigo
+        if len(self.solucion) > 0:
+            movimiento_rival = chess.Move.from_uci(self.solucion[0])
+            self.board.push(movimiento_rival)
+            # El jugador empieza a interactuar a partir del paso 1
+            self.paso_actual = 1
+        else:
+            self.paso_actual = 0
+
         self.casilla_seleccionada = None
         self.movimientos_validos = []
         self.estado_puzzle = "JUGANDO"
