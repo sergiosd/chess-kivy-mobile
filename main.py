@@ -5,6 +5,8 @@ from kivy.uix.relativelayout import RelativeLayout
 from kivy.uix.behaviors import ButtonBehavior
 from kivy.core.window import Window
 from kivy.clock import Clock
+from kivy.core.audio import SoundLoader
+from kivy.properties import BooleanProperty, StringProperty
 import chess
 
 from chess_manager import ChessManager
@@ -12,18 +14,41 @@ from puzzle_manager import PuzzleManager
 
 Window.size = (450, 800)
 
+# Diseño KV purgado y estructurado sin errores de indentación en el parser
 Builder.load_string("""
 <Casilla>:
     ruta_fondo: ''
     ruta_pieza: ''
-    color_tinte: 1, 1, 1, 1
+    origen_seleccionado: False
+    destino_valido: False
+    texto_fila: ''
+    texto_col: ''
 
-    Image:
-        source: root.ruta_fondo
-        color: root.color_tinte
-        allow_stretch: True
-        keep_ratio: False
+    # 1. Fondo base de la casilla
+    canvas.before:
+        Color:
+            rgba: (1, 1, 1, 1)
+        Rectangle:
+            pos: 0, 0
+            size: self.size
+            source: root.ruta_fondo
 
+        # Iluminación de selección (Amarillo suave)
+        Color:
+            rgba: (1, 1, 0, 0.4) if root.origen_seleccionado else (0, 0, 0, 0)
+        Rectangle:
+            pos: 0, 0
+            size: self.size
+    
+    # 2. Círculo verde de movimiento válido (Radio = 1/8 del ancho)
+    canvas.after:
+        Color:
+            rgba: (0, 0.7, 0, 0.8) if root.destino_valido else (0, 0, 0, 0)
+        Ellipse:
+            size: self.width / 4, self.height / 4
+            pos: self.center_x - self.width / 8, self.center_y - self.height / 8
+
+    # 3. Imagen de la pieza de ajedrez
     Image:
         source: root.ruta_pieza
         opacity: 1 if root.ruta_pieza else 0
@@ -31,6 +56,26 @@ Builder.load_string("""
         keep_ratio: True
         size_hint: 0.85, 0.85
         pos_hint: {'center_x': 0.5, 'center_y': 0.5}
+
+    # 4. Coordenadas numéricas (Fila)
+    Label:
+        text: root.texto_fila
+        font_size: '12sp'
+        bold: True
+        color: 0.1, 0.1, 0.1, 0.8
+        size_hint: None, None
+        size: self.texture_size
+        pos_hint: {'x': 0.05, 'top': 0.95}
+
+    # 5. Coordenadas alfabéticas (Columna)
+    Label:
+        text: root.texto_col
+        font_size: '12sp'
+        bold: True
+        color: 0.1, 0.1, 0.1, 0.8
+        size_hint: None, None
+        size: self.texture_size
+        pos_hint: {'right': 0.95, 'y': 0.05}
 
 <VistaTablero>:
     orientation: 'vertical'
@@ -80,12 +125,19 @@ Builder.load_string("""
             size_hint_y: None
             height: dp(50)
             background_color: 0.2, 0.6, 0.8, 1
-            # Llamamos al método directamente desde la interfaz
             on_press: root.cargar_siguiente_puzzle()
 """)
 
 
 class Casilla(ButtonBehavior, RelativeLayout):
+    ruta_fondo = StringProperty('')
+    ruta_pieza = StringProperty('')
+    origen_seleccionado = BooleanProperty(False)
+    destino_valido = BooleanProperty(False)
+    texto_fila = StringProperty('')
+    texto_col = StringProperty('')
+
+
     def __init__(self, nombre_casilla, controlador, **kwargs):
         super().__init__(**kwargs)
         self.nombre_casilla = nombre_casilla
@@ -99,8 +151,10 @@ class VistaTablero(BoxLayout):
     def __init__(self, gestor_ajedrez, gestor_puzzles, **kwargs):
         super().__init__(**kwargs)
         self.gestor_ajedrez = gestor_ajedrez
-        self.gestor_puzzles = gestor_puzzles  # Inyectamos el gestor de puzzles aquí
+        self.gestor_puzzles = gestor_puzzles
         self.diccionario_casillas = {}
+
+        self.sonido_mover = SoundLoader.load('assets/sounds/mover.wav')
 
         self.mapa_imagenes = {
             'P': 'assets/pieces/blanco_peon.png', 'p': 'assets/pieces/negro_peon.png',
@@ -118,12 +172,9 @@ class VistaTablero(BoxLayout):
         cuadricula.clear_widgets()
         self.diccionario_casillas.clear()
 
-        # Descubrimos de qué color jugamos tras el movimiento inicial de la IA
         juega_blancas = self.gestor_ajedrez.board.turn
-
-        # Rotación matemática del tablero
-        filas = range(7, -1, -1) if juega_blancas else range(8)
-        columnas = range(8) if juega_blancas else range(7, -1, -1)
+        filas = list(range(7, -1, -1)) if juega_blancas else list(range(8))
+        columnas = list(range(8)) if juega_blancas else list(range(7, -1, -1))
 
         for fila in filas:
             for col in columnas:
@@ -133,15 +184,18 @@ class VistaTablero(BoxLayout):
                 es_clara = (fila + col) % 2 != 0
                 casilla.ruta_fondo = "assets/squares/casilla_clara.png" if es_clara else "assets/squares/casilla_oscura.png"
 
+                if col == columnas[0]:
+                    casilla.texto_fila = nombre_casilla[1]
+                if fila == filas[-1]:
+                    casilla.texto_col = nombre_casilla[0]
+
                 self.diccionario_casillas[nombre_casilla] = casilla
                 cuadricula.add_widget(casilla)
 
     def cargar_siguiente_puzzle(self):
-        """Solicita un puzzle nuevo, lo inyecta en el cerebro y repinta la vista."""
         nuevo_puzzle = self.gestor_puzzles.obtener_puzzle_aleatorio(1000, set())
         if nuevo_puzzle:
             self.gestor_ajedrez.cargar_puzzle(nuevo_puzzle)
-            # Reconstruimos las casillas por si el nuevo puzzle cambia nuestro color
             self.inicializar_tablero()
             self.actualizar_piezas_visuales()
             self.ids.lbl_estado.text = "¡NUEVO DESPLIEGUE!"
@@ -149,15 +203,10 @@ class VistaTablero(BoxLayout):
 
     def actualizar_piezas_visuales(self):
         tablero = self.gestor_ajedrez.board
-
         for nombre_casilla, widget in self.diccionario_casillas.items():
             indice_casilla = chess.parse_square(nombre_casilla)
             pieza = tablero.piece_at(indice_casilla)
-
-            if pieza:
-                widget.ruta_pieza = self.mapa_imagenes.get(pieza.symbol(), '')
-            else:
-                widget.ruta_pieza = ''
+            widget.ruta_pieza = self.mapa_imagenes.get(pieza.symbol(), '') if pieza else ''
 
         info = self.gestor_ajedrez.info_puzzle
         if info:
@@ -172,6 +221,8 @@ class VistaTablero(BoxLayout):
             self.actualizar_piezas_visuales()
 
             if exito:
+                if self.sonido_mover: self.sonido_mover.play()
+
                 if gestor.estado_puzzle == "VICTORIA":
                     self.ids.lbl_estado.text = "¡PUZZLE COMPLETADO!"
                     self.ids.lbl_estado.color = [0, 1, 0, 1]
@@ -190,6 +241,8 @@ class VistaTablero(BoxLayout):
         movimiento = self.gestor_ajedrez.ejecutar_movimiento_enemigo()
         if movimiento:
             self.actualizar_piezas_visuales()
+            if self.sonido_mover: self.sonido_mover.play()
+
             if self.gestor_ajedrez.estado_puzzle == "VICTORIA":
                 self.ids.lbl_estado.text = "¡PUZZLE COMPLETADO!"
                 self.ids.lbl_estado.color = [0, 1, 0, 1]
@@ -204,16 +257,17 @@ class VistaTablero(BoxLayout):
         if gestor.casilla_seleccionada:
             casilla_origen = self.diccionario_casillas.get(gestor.casilla_seleccionada)
             if casilla_origen:
-                casilla_origen.color_tinte = [1, 1, 0, 1]
+                casilla_origen.origen_seleccionado = True
 
             for destino in gestor.movimientos_validos:
                 casilla_destino = self.diccionario_casillas.get(destino)
                 if casilla_destino:
-                    casilla_destino.color_tinte = [0, 1, 0, 1]
+                    casilla_destino.destino_valido = True
 
     def limpiar_iluminacion(self):
         for widget in self.diccionario_casillas.values():
-            widget.color_tinte = [1, 1, 1, 1]
+            widget.origen_seleccionado = False
+            widget.destino_valido = False
 
 
 class ChessApp(App):
@@ -225,9 +279,7 @@ class ChessApp(App):
         if puzzle:
             gestor_ajedrez.cargar_puzzle(puzzle)
 
-        # Pasamos ambos gestores a la vista para el patrón MVC
-        vista = VistaTablero(gestor_ajedrez=gestor_ajedrez, gestor_puzzles=gestor_puzzles)
-        return vista
+        return VistaTablero(gestor_ajedrez=gestor_ajedrez, gestor_puzzles=gestor_puzzles)
 
 
 if __name__ == '__main__':
