@@ -154,7 +154,7 @@ class VistaTablero(BoxLayout):
         self.gestor_puzzles = gestor_puzzles
         self.diccionario_casillas = {}
 
-        self.sonido_mover = SoundLoader.load('assets/sounds/mover.wav')
+        self.sonido_mover = SoundLoader.load('assets/sounds/move.wav')
 
         self.mapa_imagenes = {
             'P': 'assets/pieces/blanco_peon.png', 'p': 'assets/pieces/negro_peon.png',
