@@ -9,10 +9,13 @@ from kivy.core.audio import SoundLoader
 from kivy.properties import BooleanProperty, StringProperty
 from kivy.animation import Animation
 from kivy.uix.image import Image
+from kivy.graphics import Color, Line, Triangle
+from kivy.metrics import dp
 import chess
 
 from chess_manager import ChessManager
 from puzzle_manager import PuzzleManager
+import math
 
 Window.size = (450, 800)
 
@@ -85,49 +88,84 @@ Builder.load_string("""
     spacing: dp(10)
     canvas.before:
         Color:
-            rgba: 0.1, 0.15, 0.2, 1
+            # Fondo azul oscuro puro estilo Pygame
+            rgba: 0.12, 0.29, 0.42, 1
         Rectangle:
             pos: self.pos
             size: self.size
 
     Label:
-        text: 'SALA DE MANDO'
+        id: lbl_mision
+        text: 'Puzzle ELO: --'
         font_size: '28sp'
         bold: True
         size_hint_y: 0.15
-        color: 0, 0.9, 0.8, 1
+        color: 0.1, 0.8, 0.8, 1
 
     AnchorLayout:
         size_hint_y: 0.55
-        GridLayout:
-            id: cuadricula_tablero
-            cols: 8
-            rows: 8
+        BoxLayout:
             size_hint: None, None
-            width: min(root.width - dp(40), root.height * 0.55)
-            height: self.width
+            width: cuadricula_tablero.width + dp(4)
+            height: cuadricula_tablero.height + dp(4)
+            canvas.before:
+                Color:
+                    rgba: 0.8, 0.6, 0.1, 1
+                Line:
+                    width: 1.5
+                    rectangle: self.x, self.y, self.width, self.height
+            GridLayout:
+                id: cuadricula_tablero
+                cols: 8
+                rows: 8
+                size_hint: None, None
+                width: min(root.width - dp(40), root.height * 0.55)
+                height: self.width
 
     BoxLayout:
+        id: panel_inferior
         orientation: 'vertical'
-        size_hint_y: 0.30
-        spacing: dp(10)
+        size_hint_y: 0.35
+        spacing: dp(8)
+        
         Label:
             id: lbl_estado
             text: 'Esperando despliegue...'
-            font_size: '20sp'
+            font_size: '22sp'
             bold: True
+            markup: True
             color: 0.9, 0.9, 0.9, 1
+            
         Label:
             id: lbl_info
-            text: 'Nivel: -- | ID: --'
-            font_size: '16sp'
-            color: 0.7, 0.7, 0.8, 1
+            text: 'Nivel: --'
+            font_size: '18sp'
+            color: 0, 0.8, 0.7, 1
+            bold: True
+            
+        Label:
+            id: lbl_temas
+            text: ''
+            font_size: '14sp'
+            color: 0.6, 0.6, 0.6, 1
+            
         Button:
+            id: btn_siguiente
             text: 'SIGUIENTE PUZZLE'
             size_hint_y: None
-            height: dp(50)
-            background_color: 0.2, 0.6, 0.8, 1
+            height: dp(45)
+            background_color: 0, 0.7, 0.5, 1
             on_press: root.cargar_siguiente_puzzle()
+            
+        Button:
+            id: btn_volver
+            text: 'Salir del juego'
+            size_hint_y: None
+            height: dp(45)
+            background_color: 0.3, 0.3, 0.3, 1
+            opacity: 0
+            disabled: True
+            on_press: root.salir_juego()
 """)
 
 
@@ -156,7 +194,10 @@ class VistaTablero(BoxLayout):
         self.gestor_puzzles = gestor_puzzles
         self.diccionario_casillas = {}
 
+        self.sonido_seleccionar = SoundLoader.load('assets/sounds/select.wav')
         self.sonido_mover = SoundLoader.load('assets/sounds/move.wav')
+        self.sonido_ganar = SoundLoader.load('assets/sounds/win.wav')
+        self.sonido_perder = SoundLoader.load('assets/sounds/lose.wav')
 
         self.mapa_imagenes = {
             'P': 'assets/pieces/blanco_peon.png', 'p': 'assets/pieces/negro_peon.png',
@@ -195,13 +236,21 @@ class VistaTablero(BoxLayout):
                 cuadricula.add_widget(casilla)
 
     def cargar_siguiente_puzzle(self):
+        self.limpiar_flecha()
         nuevo_puzzle = self.gestor_puzzles.obtener_puzzle_aleatorio(1000, set())
         if nuevo_puzzle:
             self.gestor_ajedrez.cargar_puzzle(nuevo_puzzle)
             self.inicializar_tablero()
             self.actualizar_piezas_visuales()
-            self.ids.lbl_estado.text = "¡NUEVO DESPLIEGUE!"
-            self.ids.lbl_estado.color = [0.9, 0.9, 0.9, 1]
+
+            es_blancas = self.gestor_ajedrez.board.turn == chess.WHITE
+            color_turno = "[color=#ffffff]BLANCAS[/color]" if es_blancas else "[color=#ff6b6b]NEGRAS[/color]"
+            self.ids.lbl_estado.text = f"Tu turno: {color_turno}"
+
+            self.ids.lbl_temas.text = ""
+            self.ids.btn_siguiente.text = "SIGUIENTE PUZZLE"
+            self.ids.btn_volver.opacity = 0
+            self.ids.btn_volver.disabled = True
 
     def actualizar_piezas_visuales(self):
         tablero = self.gestor_ajedrez.board
@@ -212,7 +261,14 @@ class VistaTablero(BoxLayout):
 
         info = self.gestor_ajedrez.info_puzzle
         if info:
-            self.ids.lbl_info.text = f"Nivel: {info.get('rating', '--')} | ID: {info.get('id', '--')}"
+            self.ids.lbl_mision.text = f"Puzzle ELO: {info.get('rating', '--')}"
+            self.ids.lbl_info.text = f"Popularidad: {info.get('popularity', '--')}% | ID: {info.get('id', '--')}"
+
+            es_blancas = tablero.turn == chess.WHITE
+            color_turno = "[color=#ff6b6b]NEGRAS[/color]" if not es_blancas else "[color=#ffffff]BLANCAS[/color]"
+
+            if self.gestor_ajedrez.estado_puzzle == "JUGANDO":
+                self.ids.lbl_estado.text = f"Tu turno: {color_turno}"
 
     def al_tocar_casilla(self, nombre_casilla):
         gestor = self.gestor_ajedrez
@@ -236,8 +292,12 @@ class VistaTablero(BoxLayout):
                     self.diccionario_casillas[nombre_casilla].ruta_pieza = self.mapa_imagenes.get(
                         simbolo, '')
                     if gestor.estado_puzzle == "VICTORIA":
+                        if self.sonido_ganar:
+                            self.sonido_ganar.play()
                         self.ids.lbl_estado.text = "¡PUZZLE COMPLETADO!"
                         self.ids.lbl_estado.color = [0, 1, 0, 1]
+                        self.ids.btn_volver.opacity = 1
+                        self.ids.btn_volver.disabled = False
                     else:
                         self.ids.lbl_estado.text = "¡Excelente! Responde la IA..."
                         self.ids.lbl_estado.color = [1, 1, 0, 1]
@@ -246,11 +306,30 @@ class VistaTablero(BoxLayout):
                 self.animar_pieza(origen, nombre_casilla, simbolo, terminar_vuelo)
             else:
                 self.actualizar_piezas_visuales()
-                self.ids.lbl_estado.text = "¡MOVIMIENTO INCORRECTO!"
-                self.ids.lbl_estado.color = [1, 0, 0, 1]
+                if self.sonido_perder:
+                    self.sonido_perder.play()
+                mov_erroneo = gestor.movimiento_fallado
+                if mov_erroneo:
+                    mov_formateado = f"{mov_erroneo[:2].upper()}-{mov_erroneo[2:4].upper()}"
+                    self.ids.lbl_estado.text = f"Debiste jugar: {mov_formateado}"
+                    self.mostrar_flecha_error(mov_erroneo)
+
+                self.ids.lbl_estado.color = [1, 0.4, 0.4, 1]
+
+                info = gestor.info_puzzle
+                if info:
+                    temas = info.get('themes', '').replace(' ', ' • ')
+                    self.ids.lbl_temas.text = temas
+                    self.ids.lbl_info.text = f"Nivel: {info.get('rating')} (-22)"
+
+                self.ids.btn_siguiente.text = "Siguiente Misión"
+                self.ids.btn_volver.opacity = 1
+                self.ids.btn_volver.disabled = False
         else:
             gestor.seleccionar_casilla(nombre_casilla)
             self.iluminar_casillas()
+            if gestor.casilla_seleccionada and self.sonido_seleccionar:
+                self.sonido_seleccionar.play()
 
     def evaluar_estado_jugador(self):
         # ¡Magia! La animación terminó, devolvemos la visibilidad a la pieza
@@ -285,6 +364,8 @@ class VistaTablero(BoxLayout):
                 if self.gestor_ajedrez.estado_puzzle == "VICTORIA":
                     self.ids.lbl_estado.text = "¡PUZZLE COMPLETADO!"
                     self.ids.lbl_estado.color = [0, 1, 0, 1]
+                    self.ids.btn_volver.opacity = 1
+                    self.ids.btn_volver.disabled = False
                 else:
                     self.ids.lbl_estado.text = "¡Tu turno! Continúa."
                     self.ids.lbl_estado.color = [0.9, 0.9, 0.9, 1]
@@ -348,6 +429,43 @@ class VistaTablero(BoxLayout):
 
         anim.bind(on_complete=limpiar)
         anim.start(fantasma)
+
+    def mostrar_flecha_error(self, mov_correcto):
+        origen = mov_correcto[:2]
+        destino = mov_correcto[2:4]
+
+        c_origen = self.diccionario_casillas.get(origen)
+        c_destino = self.diccionario_casillas.get(destino)
+
+        if not c_origen or not c_destino:
+            return
+
+        x1 = c_origen.x + c_origen.width / 2
+        y1 = c_origen.y + c_origen.height / 2
+        x2 = c_destino.x + c_destino.width / 2
+        y2 = c_destino.y + c_destino.height / 2
+
+        with self.ids.cuadricula_tablero.canvas.after:
+            Color(0.4, 0.8, 0.4, 0.7)
+            self.linea_error = Line(points=[x1, y1, x2, y2], width=dp(4))
+
+            angulo = math.atan2(y2 - y1, x2 - x1)
+            l = dp(16)
+            p1 = (x2, y2)
+            p2 = (x2 - l * math.cos(angulo - math.pi / 6), y2 - l * math.sin(angulo - math.pi / 6))
+            p3 = (x2 - l * math.cos(angulo + math.pi / 6), y2 - l * math.sin(angulo + math.pi / 6))
+
+            self.triangulo_error = Triangle(points=[p1[0], p1[1], p2[0], p2[1], p3[0], p3[1]])
+
+    def limpiar_flecha(self):
+        if hasattr(self, 'linea_error'):
+            self.ids.cuadricula_tablero.canvas.after.remove(self.linea_error)
+            self.ids.cuadricula_tablero.canvas.after.remove(self.triangulo_error)
+            del self.linea_error
+            del self.triangulo_error
+
+    def salir_juego(self):
+        App.get_running_app().stop()
 
 
 class ChessApp(App):
