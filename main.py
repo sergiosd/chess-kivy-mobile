@@ -7,6 +7,8 @@ from kivy.core.window import Window
 from kivy.clock import Clock
 from kivy.core.audio import SoundLoader
 from kivy.properties import BooleanProperty, StringProperty
+from kivy.animation import Animation
+from kivy.uix.image import Image
 import chess
 
 from chess_manager import ChessManager
@@ -216,39 +218,92 @@ class VistaTablero(BoxLayout):
         gestor = self.gestor_ajedrez
 
         if gestor.casilla_seleccionada and nombre_casilla in gestor.movimientos_validos:
+            origen = gestor.casilla_seleccionada
+            indice_origen = chess.parse_square(origen)
+            pieza = gestor.board.piece_at(indice_origen)
+            simbolo = pieza.symbol() if pieza else ''
+
             exito = gestor.intentar_movimiento_jugador(nombre_casilla)
             self.limpiar_iluminacion()
-            self.actualizar_piezas_visuales()
 
             if exito:
                 if self.sonido_mover: self.sonido_mover.play()
 
-                if gestor.estado_puzzle == "VICTORIA":
-                    self.ids.lbl_estado.text = "¡PUZZLE COMPLETADO!"
-                    self.ids.lbl_estado.color = [0, 1, 0, 1]
-                else:
-                    self.ids.lbl_estado.text = "¡Excelente! Responde la IA..."
-                    self.ids.lbl_estado.color = [1, 1, 0, 1]
-                    Clock.schedule_once(self.procesar_respuesta_ia, 0.7)
+                self.actualizar_piezas_visuales()
+                self.diccionario_casillas[nombre_casilla].ruta_pieza = ''
+
+                def terminar_vuelo():
+                    self.diccionario_casillas[nombre_casilla].ruta_pieza = self.mapa_imagenes.get(
+                        simbolo, '')
+                    if gestor.estado_puzzle == "VICTORIA":
+                        self.ids.lbl_estado.text = "¡PUZZLE COMPLETADO!"
+                        self.ids.lbl_estado.color = [0, 1, 0, 1]
+                    else:
+                        self.ids.lbl_estado.text = "¡Excelente! Responde la IA..."
+                        self.ids.lbl_estado.color = [1, 1, 0, 1]
+                        Clock.schedule_once(self.procesar_respuesta_ia, 0.4)
+
+                self.animar_pieza(origen, nombre_casilla, simbolo, terminar_vuelo)
             else:
+                self.actualizar_piezas_visuales()
                 self.ids.lbl_estado.text = "¡MOVIMIENTO INCORRECTO!"
                 self.ids.lbl_estado.color = [1, 0, 0, 1]
         else:
             gestor.seleccionar_casilla(nombre_casilla)
             self.iluminar_casillas()
 
-    def procesar_respuesta_ia(self, dt):
-        movimiento = self.gestor_ajedrez.ejecutar_movimiento_enemigo()
-        if movimiento:
-            self.actualizar_piezas_visuales()
-            if self.sonido_mover: self.sonido_mover.play()
+    def evaluar_estado_jugador(self):
+        # ¡Magia! La animación terminó, devolvemos la visibilidad a la pieza
+        self.actualizar_piezas_visuales()
 
-            if self.gestor_ajedrez.estado_puzzle == "VICTORIA":
-                self.ids.lbl_estado.text = "¡PUZZLE COMPLETADO!"
-                self.ids.lbl_estado.color = [0, 1, 0, 1]
-            else:
-                self.ids.lbl_estado.text = "¡Tu turno! Continúa."
-                self.ids.lbl_estado.color = [0.9, 0.9, 0.9, 1]
+        gestor = self.gestor_ajedrez
+        if gestor.estado_puzzle == "VICTORIA":
+            self.ids.lbl_estado.text = "¡PUZZLE COMPLETADO!"
+            self.ids.lbl_estado.color = [0, 1, 0, 1]
+        else:
+            self.ids.lbl_estado.text = "¡Excelente! Responde la IA..."
+            self.ids.lbl_estado.color = [1, 1, 0, 1]
+            Clock.schedule_once(self.procesar_respuesta_ia, 0.3)
+
+    def procesar_respuesta_ia(self, dt):
+        mov = self.gestor_ajedrez.ejecutar_movimiento_enemigo()
+        if mov:
+            origen = mov[:2]
+            destino = mov[2:4]
+
+            # La pieza ya está lógicamente en el destino
+            indice_destino = chess.parse_square(destino)
+            pieza = self.gestor_ajedrez.board.piece_at(indice_destino)
+            simbolo = pieza.symbol() if pieza else ''
+
+            # Escondemos la pieza de origen en la vista
+            self.diccionario_casillas[origen].ruta_pieza = ''
+
+            def terminar_animacion_ia():
+                self.actualizar_piezas_visuales()
+                if self.sonido_mover: self.sonido_mover.play()
+                if self.gestor_ajedrez.estado_puzzle == "VICTORIA":
+                    self.ids.lbl_estado.text = "¡PUZZLE COMPLETADO!"
+                    self.ids.lbl_estado.color = [0, 1, 0, 1]
+                else:
+                    self.ids.lbl_estado.text = "¡Tu turno! Continúa."
+                    self.ids.lbl_estado.color = [0.9, 0.9, 0.9, 1]
+
+            self.animar_pieza(origen, destino, simbolo, terminar_animacion_ia)
+
+    def finalizar_turno_ia(self):
+        # Restauramos el tablero tras el movimiento enemigo
+        self.actualizar_piezas_visuales()
+        if self.sonido_mover: self.sonido_mover.play()
+
+        if self.gestor_ajedrez.estado_puzzle == "VICTORIA":
+            self.ids.lbl_estado.text = "¡PUZZLE COMPLETADO!"
+            self.ids.lbl_estado.color = [0, 1, 0, 1]
+        else:
+            self.ids.lbl_estado.text = "¡Tu turno! Continúa."
+            self.ids.lbl_estado.color = [0.9, 0.9, 0.9, 1]
+
+
 
     def iluminar_casillas(self):
         self.limpiar_iluminacion()
@@ -268,6 +323,31 @@ class VistaTablero(BoxLayout):
         for widget in self.diccionario_casillas.values():
             widget.origen_seleccionado = False
             widget.destino_valido = False
+
+    def animar_pieza(self, origen, destino, simbolo, callback):
+
+        c_origen = self.diccionario_casillas[origen]
+        c_destino = self.diccionario_casillas[destino]
+
+        pos_ini = c_origen.parent.to_window(c_origen.x, c_origen.y)
+        pos_fin = c_destino.parent.to_window(c_destino.x, c_destino.y)
+
+        fantasma = Image(
+            source=self.mapa_imagenes.get(simbolo, ''),
+            size_hint=(None, None),
+            size=c_origen.size,
+            pos=pos_ini
+        )
+        Window.add_widget(fantasma)
+
+        anim = Animation(pos=pos_fin, d=0.3, t='in_out_expo')
+
+        def limpiar(*args):
+            Window.remove_widget(fantasma)
+            callback()
+
+        anim.bind(on_complete=limpiar)
+        anim.start(fantasma)
 
 
 class ChessApp(App):
