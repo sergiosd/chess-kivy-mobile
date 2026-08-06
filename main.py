@@ -15,6 +15,7 @@ import chess
 
 from chess_manager import ChessManager
 from puzzle_manager import PuzzleManager
+from perfil_manager import PerfilManager
 import math
 
 Window.size = (450, 800)
@@ -188,10 +189,13 @@ class Casilla(ButtonBehavior, RelativeLayout):
 
 
 class VistaTablero(BoxLayout):
-    def __init__(self, gestor_ajedrez, gestor_puzzles, **kwargs):
+    def __init__(self, gestor_ajedrez, gestor_puzzles, perfil_actual, gestor_perfiles, **kwargs):
+        # Kivy absorbe un diccionario limpio de atributos extraños
         super().__init__(**kwargs)
         self.gestor_ajedrez = gestor_ajedrez
         self.gestor_puzzles = gestor_puzzles
+        self.perfil_actual = perfil_actual
+        self.gestor_perfiles = gestor_perfiles
         self.diccionario_casillas = {}
 
         self.sonido_seleccionar = SoundLoader.load('assets/sounds/select.wav')
@@ -468,16 +472,35 @@ class VistaTablero(BoxLayout):
         App.get_running_app().stop()
 
 
+
 class ChessApp(App):
     def build(self):
+        # Inicializamos los sistemas de gestión
+        self.gestor_perfiles = PerfilManager()
+
+        # Recuperamos al último jugador que abrió la app
+        ultimo = self.gestor_perfiles.obtener_ultimo_usuario()
+        nombre_actual = ultimo if ultimo else "Jugador1"
+        self.perfil_actual = self.gestor_perfiles.cargar_perfil(nombre_actual)
+
         gestor_ajedrez = ChessManager()
         gestor_puzzles = PuzzleManager()
 
-        puzzle = gestor_puzzles.obtener_puzzle_aleatorio(1000, set())
+        # Cargamos el primer puzle bloqueando los que ya ha resuelto[cite: 5]
+        puzzle = gestor_puzzles.obtener_puzzle_aleatorio(
+            self.perfil_actual["elo"],
+            set(self.perfil_actual["resueltos"])
+        )
         if puzzle:
             gestor_ajedrez.cargar_puzzle(puzzle)
 
-        return VistaTablero(gestor_ajedrez=gestor_ajedrez, gestor_puzzles=gestor_puzzles)
+        # Inyectamos el perfil en la vista
+        return VistaTablero(
+            gestor_ajedrez=gestor_ajedrez,
+            gestor_puzzles=gestor_puzzles,
+            perfil_actual=self.perfil_actual,
+            gestor_perfiles=self.gestor_perfiles
+        )
 
 
 if __name__ == '__main__':
