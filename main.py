@@ -163,13 +163,13 @@ Builder.load_string("""
 
         Button:
             id: btn_volver
-            text: 'Salir del juego'
+            text: 'VOLVER AL MENÚ'
             size_hint_y: None
             height: dp(45)
-            background_color: 0.3, 0.3, 0.3, 1
+            background_color: 0.8, 0.4, 0.1, 1
             opacity: 0
             disabled: True
-            on_press: root.salir_juego()
+            on_press: root.volver_menu()
             
 <PantallaSeleccion>:
     BoxLayout:
@@ -192,7 +192,7 @@ Builder.load_string("""
             size_hint_y: 0.2
             
         ScrollView:
-            size_hint_y: 0.5
+            size_hint_y: 0.4
             GridLayout:
                 id: grid_perfiles
                 cols: 1
@@ -202,16 +202,28 @@ Builder.load_string("""
                 
         BoxLayout:
             orientation: 'vertical'
-            size_hint_y: 0.3
+            size_hint_y: 0.4
             spacing: dp(10)
             
-            TextInput:
-                id: input_nuevo
-                hint_text: 'Escribe un nuevo nombre...'
-                multiline: False
+            BoxLayout:
+                orientation: 'horizontal'
                 size_hint_y: None
                 height: dp(45)
-                font_size: '18sp'
+                spacing: dp(10)
+                
+                TextInput:
+                    id: input_nuevo
+                    hint_text: 'Nuevo usuario...'
+                    multiline: False
+                    font_size: '18sp'
+                    
+                TextInput:
+                    id: input_elo
+                    hint_text: 'ELO (Min 600)'
+                    input_filter: 'int'
+                    multiline: False
+                    font_size: '18sp'
+                    size_hint_x: 0.5
                 
             Button:
                 text: 'CREAR PERFIL NUEVO'
@@ -220,6 +232,14 @@ Builder.load_string("""
                 background_color: 0.8, 0.6, 0.1, 1
                 bold: True
                 on_press: root.crear_perfil()
+                
+            Button:
+                text: 'SALIR DEL JUEGO'
+                size_hint_y: None
+                height: dp(50)
+                background_color: 0.8, 0.2, 0.2, 1
+                bold: True
+                on_press: app.stop()
 """)
 
 from kivy.uix.screenmanager import Screen
@@ -231,11 +251,9 @@ class PantallaSeleccion(Screen):
     """
     Vista y controlador de la pantalla inicial de selección de usuarios.
 
-    Hereda de la clase Screen de Kivy para integrarse sin fricciones en el
-    ScreenManager. Su rol en el patrón MVC es puramente visual e interactivo:
-    se encarga de mostrar los perfiles existentes, permitir la creación de
-    nuevos jugadores y despachar el evento de selección para iniciar el juego
-    sin acoplarse directamente a la lectura del disco duro.
+    Hereda de la clase Screen de Kivy. Su rol en el patrón MVC es gestionar la
+    creación de nuevos perfiles (incluyendo la validación de un ELO mínimo) y
+    despachar el evento para iniciar el juego o cerrar la aplicación.
     """
 
     def __init__(self, gestor_perfiles, al_seleccionar, **kwargs):
@@ -243,12 +261,9 @@ class PantallaSeleccion(Screen):
         Inicializa la pantalla de selección inyectando sus dependencias.
 
         Args:
-            gestor_perfiles (PerfilManager): Referencia al modelo que maneja la
-                                             persistencia de los datos en JSON[cite: 4].
-            al_seleccionar (callable): Función callback delegada que se ejecutará
-                                       cuando el usuario pulse sobre un perfil.
-            **kwargs: Argumentos adicionales tragados silenciosamente por la
-                      burocrática jerarquía de inicialización de Kivy.
+            gestor_perfiles (PerfilManager): Referencia al modelo de persistencia de datos[cite: 4].
+            al_seleccionar (callable): Función callback para iniciar el tablero.
+            **kwargs: Argumentos para el inicializador de Kivy[cite: 3].
         """
         super().__init__(**kwargs)
         self.gestor_perfiles = gestor_perfiles
@@ -257,12 +272,7 @@ class PantallaSeleccion(Screen):
 
     def poblar_perfiles(self):
         """
-        Lee los usuarios registrados y genera los botones interactivos dinámicamente.
-
-        Limpia la cuadrícula actual (grid_perfiles) para evitar duplicados visuales
-        y consulta al gestor de perfiles para obtener la lista actualizada. Por cada
-        usuario, instancia un botón y sortea la infame trampa de los cierres (closures)
-        en los bucles de Python forzando la evaluación temprana en la función lambda.
+        Genera los botones interactivos dinámicamente según los usuarios registrados.
         """
         self.ids.grid_perfiles.clear_widgets()
         usuarios = self.gestor_perfiles.obtener_lista_usuarios()
@@ -275,27 +285,36 @@ class PantallaSeleccion(Screen):
                 background_color=(0, 0.7, 0.5, 1),
                 bold=True
             )
-            # El peculiar bucle de Python exige forzar la captura del valor de la variable
-            # inyectándola como un argumento por defecto en la lambda
             btn.bind(on_press=lambda instance, nombre=u: self.al_seleccionar(nombre))
             self.ids.grid_perfiles.add_widget(btn)
 
     def crear_perfil(self):
         """
-        Captura el texto del campo de entrada y registra un nuevo jugador.
+        Captura el nombre y el ELO para registrar un nuevo jugador.
 
-        Si el nombre introducido no está vacío, invoca al gestor para crear una
-        estructura de datos limpia (inyectando la estructura ELO por defecto si
-        el nombre no existe) y la persiste inmediatamente en disco[cite: 4].
-        Finalmente, limpia el campo de texto y refresca la lista de botones.
+        Valida que el ELO introducido sea un número válido y garantiza que
+        sea igual o superior a 600 puntos. Tras configurar el diccionario,
+        lo persiste en el almacenamiento local[cite: 4].
         """
         nombre = self.ids.input_nuevo.text.strip()
+        texto_elo = self.ids.input_elo.text.strip()
+
         if nombre:
-            # El gestor inyectará la estructura ELO por defecto si el nombre no existe[cite: 4]
+            try:
+                elo_inicial = int(texto_elo)
+            except ValueError:
+                # Si el campo está vacío o el sádico usuario metió basura, fijamos el mínimo
+                elo_inicial = 600
+
+            # Forzamos matemáticamente el suelo de 600 puntos de ELO
+            elo_inicial = max(600, elo_inicial)
+
             nuevo_perfil = self.gestor_perfiles.cargar_perfil(nombre)
+            nuevo_perfil["elo"] = elo_inicial
             self.gestor_perfiles.guardar_perfil(nuevo_perfil)
 
             self.ids.input_nuevo.text = ''
+            self.ids.input_elo.text = ''
             self.poblar_perfiles()
 
 class Casilla(ButtonBehavior, RelativeLayout):
@@ -504,6 +523,7 @@ class VistaTablero(BoxLayout):
                         self.ids.lbl_estado.color = [0, 1, 0, 1]
                         self.ids.btn_volver.opacity = 1
                         self.ids.btn_volver.disabled = False
+                        self.registrar_victoria()
                     else:
                         self.ids.lbl_estado.text = "¡Excelente! Responde la IA..."
                         self.ids.lbl_estado.color = [1, 1, 0, 1]
@@ -584,6 +604,7 @@ class VistaTablero(BoxLayout):
                     self.ids.lbl_estado.color = [0, 1, 0, 1]
                     self.ids.btn_volver.opacity = 1
                     self.ids.btn_volver.disabled = False
+                    self.registrar_victoria()
                 else:
                     self.ids.lbl_estado.text = "¡Tu turno! Continúa."
                     self.ids.lbl_estado.color = [0.9, 0.9, 0.9, 1]
@@ -701,6 +722,27 @@ class VistaTablero(BoxLayout):
     def salir_juego(self):
         """Aborta la aplicación de golpe llamando a la parada oficial del bucle[cite: 3]."""
         App.get_running_app().stop()
+
+    def registrar_victoria(self):
+        """
+        Registra el ID del puzzle resuelto en el perfil del jugador.
+
+        Este método protege el historial, asegurando que un mismo táctico
+        no se duplique en la lista de 'resueltos' y ordenando al gestor
+        que consolide la nueva información en el disco duro JSON[cite: 3, 4].
+        """
+        info = self.gestor_ajedrez.info_puzzle
+        if info:
+            id_puzzle = info.get("id")
+            if id_puzzle and id_puzzle not in self.perfil_actual["resueltos"]:
+                self.perfil_actual["resueltos"].append(id_puzzle)
+                self.gestor_perfiles.guardar_perfil(self.perfil_actual)
+
+    def volver_menu(self):
+        """
+        Abandona el tablero y retrocede elegantemente al menú de selección de perfiles.
+        """
+        App.get_running_app().sm.current = 'seleccion'
 
 
 class ChessApp(App):
