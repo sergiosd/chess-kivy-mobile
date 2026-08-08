@@ -5,6 +5,18 @@ Este archivo actúa como el núcleo de la Vista en el patrón MVC, orquestando
 la interfaz gráfica, las animaciones asíncronas de Kivy, el motor de audio y
 la interacción directa con los controladores lógicos (ajedrez, perfiles y puzles)[cite: 3].
 """
+"""
+Módulo de configuración previa y arranque de la aplicación.
+
+Aplica configuraciones críticas al entorno de Kivy antes de cargar la 
+interfaz gráfica (Vista) para asegurar una experiencia de usuario limpia.
+"""
+from kivy.config import Config
+
+# ¡Por los registros desbordados del procesador! Aniquilamos la basura multitáctil.
+# Esto evita que el clic derecho del ratón genere puntos rojos persistentes en PC.
+Config.set('input', 'mouse', 'mouse,disable_multitouch')
+
 
 from kivy.app import App
 from kivy.lang import Builder
@@ -13,12 +25,13 @@ from kivy.uix.relativelayout import RelativeLayout
 from kivy.uix.behaviors import ButtonBehavior
 from kivy.uix.button import Button
 from kivy.uix.screenmanager import Screen, ScreenManager
+from kivy.uix.popup import Popup
+from kivy.uix.image import Image
 from kivy.core.window import Window
 from kivy.clock import Clock
 from kivy.core.audio import SoundLoader
-from kivy.properties import BooleanProperty, StringProperty
+from kivy.properties import BooleanProperty, StringProperty, ListProperty
 from kivy.animation import Animation
-from kivy.uix.image import Image
 from kivy.graphics import Color, Line, Triangle
 from kivy.metrics import dp
 import chess
@@ -26,8 +39,9 @@ import math
 
 # Importación de nuestros robustos módulos lógicos[cite: 3]
 from chess_manager import ChessManager
-from puzzle_manager import PuzzleManager
+from puzzle_manager import PuzzleManager, GestorProgresionPop
 from perfil_manager import PerfilManager
+from utilidades import CalculadorElo
 
 # Fijamos el tamaño de la ventana simulando un dispositivo móvil[cite: 3]
 Window.size = (450, 800)
@@ -170,6 +184,32 @@ Builder.load_string("""
             opacity: 0
             disabled: True
             on_press: root.volver_menu()
+<PopupElo>:
+    title_font_size: '20sp'
+    size_hint: 0.75, 0.35
+    auto_dismiss: False
+    separator_color: root.color_tema
+    
+    BoxLayout:
+        orientation: 'vertical'
+        padding: dp(20)
+        spacing: dp(15)
+        
+        Label:
+            text: root.mensaje
+            font_size: '18sp'
+            markup: True
+            halign: 'center'
+            valign: 'middle'
+            text_size: self.size
+            
+        Button:
+            text: 'Aceptar'
+            size_hint_y: None
+            height: dp(50)
+            background_color: root.color_tema
+            bold: True
+            on_release: root.dismiss()
             
 <PantallaSeleccion>:
     BoxLayout:
@@ -219,7 +259,7 @@ Builder.load_string("""
                     
                 TextInput:
                     id: input_elo
-                    hint_text: 'ELO (Min 600)'
+                    hint_text: 'ELO'
                     input_filter: 'int'
                     multiline: False
                     font_size: '18sp'
@@ -304,10 +344,10 @@ class PantallaSeleccion(Screen):
                 elo_inicial = int(texto_elo)
             except ValueError:
                 # Si el campo está vacío o el sádico usuario metió basura, fijamos el mínimo
-                elo_inicial = 600
+                elo_inicial = 0
 
             # Forzamos matemáticamente el suelo de 600 puntos de ELO
-            elo_inicial = max(600, elo_inicial)
+            elo_inicial = max(0, elo_inicial)
 
             nuevo_perfil = self.gestor_perfiles.cargar_perfil(nombre)
             nuevo_perfil["elo"] = elo_inicial
@@ -444,7 +484,17 @@ class VistaTablero(BoxLayout):
         motor lógico y solicita la re-renderización visual[cite: 3].
         """
         self.limpiar_flecha()
-        nuevo_puzzle = self.gestor_puzzles.obtener_puzzle_aleatorio(1000, set())
+        elo_jugador = self.perfil_actual.get("elo", 600)
+        historial_resueltos = set(self.perfil_actual.get("resueltos", []))
+        escala_actual = self.perfil_actual.get("escala_pop", 0)
+        pop_min, pop_max = GestorProgresionPop.ESCALAS[escala_actual]
+
+        nuevo_puzzle = self.gestor_puzzles.obtener_puzzle_aleatorio(
+            elo_objetivo=self.perfil_actual["elo"],
+            ids_locales=set(self.perfil_actual["resueltos"]),
+            pop_min=pop_min,
+            pop_max=pop_max
+        )
         if nuevo_puzzle:
             self.gestor_ajedrez.cargar_puzzle(nuevo_puzzle)
             self.inicializar_tablero()
@@ -475,7 +525,8 @@ class VistaTablero(BoxLayout):
 
         info = self.gestor_ajedrez.info_puzzle
         if info:
-            self.ids.lbl_mision.text = f"Puzzle ELO: {info.get('rating', '--')}"
+            elo_jugador_entero = int(self.perfil_actual.get("elo", 600))
+            self.ids.lbl_mision.text = f"Tu ELO: {elo_jugador_entero} | Puzzle ELO: {info.get('rating', '--')}"
             self.ids.lbl_info.text = f"Popularidad: {info.get('popularity', '--')}% | ID: {info.get('id', '--')}"
 
             es_blancas = tablero.turn == chess.WHITE
@@ -519,15 +570,15 @@ class VistaTablero(BoxLayout):
                         simbolo, '')
                     if gestor.estado_puzzle == "VICTORIA":
                         if self.sonido_ganar: self.sonido_ganar.play()
-                        self.ids.lbl_estado.text = "¡PUZZLE COMPLETADO!"
-                        self.ids.lbl_estado.color = [0, 1, 0, 1]
+                        variacion, nuevo_elo = self.registrar_resultado_puzzle(True)
+                        self.ids.lbl_estado.text = f"¡CORRECTO!, nuevo ELO = {nuevo_elo} (+{variacion})"
+                        self.ids.lbl_estado.color = [0, 1, 0, 1]  # Verde esperanza
+
                         self.ids.btn_volver.opacity = 1
                         self.ids.btn_volver.disabled = False
-                        self.registrar_victoria()
                     else:
                         self.ids.lbl_estado.text = "¡Excelente! Responde la IA..."
                         self.ids.lbl_estado.color = [1, 1, 0, 1]
-                        # Programamos el contraataque de la IA de forma asíncrona[cite: 3]
                         Clock.schedule_once(self.procesar_respuesta_ia, 0.4)
 
                 self.animar_pieza(origen, nombre_casilla, simbolo, terminar_vuelo)
@@ -535,19 +586,20 @@ class VistaTablero(BoxLayout):
                 self.actualizar_piezas_visuales()
                 if self.sonido_perder: self.sonido_perder.play()
 
+                # Inyectamos el castigo implacable sin decimales
+                variacion, nuevo_elo = self.registrar_resultado_puzzle(False)
+                self.ids.lbl_estado.text = f"¡INCORRECTO! nuevo ELO = {nuevo_elo} ({variacion})"
+                self.ids.lbl_estado.color = [1, 0.4, 0.4, 1]  # Rojo sangre
+
                 mov_erroneo = gestor.movimiento_fallado
                 if mov_erroneo:
-                    mov_formateado = f"{mov_erroneo[:2].upper()}-{mov_erroneo[2:4].upper()}"
-                    self.ids.lbl_estado.text = f"Debiste jugar: {mov_formateado}"
                     self.mostrar_flecha_error(mov_erroneo)
-
-                self.ids.lbl_estado.color = [1, 0.4, 0.4, 1]
 
                 info = gestor.info_puzzle
                 if info:
                     temas = info.get('themes', '').replace(' ', ' • ')
                     self.ids.lbl_temas.text = temas
-                    self.ids.lbl_info.text = f"Nivel: {info.get('rating')} (-22)"
+                    self.ids.lbl_info.text = f"Nivel: {info.get('rating')} ELO"
 
                 self.ids.btn_siguiente.text = "Siguiente Misión"
                 self.ids.btn_volver.opacity = 1
@@ -599,12 +651,14 @@ class VistaTablero(BoxLayout):
             def terminar_animacion_ia():
                 self.actualizar_piezas_visuales()
                 if self.sonido_mover: self.sonido_mover.play()
+
                 if self.gestor_ajedrez.estado_puzzle == "VICTORIA":
-                    self.ids.lbl_estado.text = "¡PUZZLE COMPLETADO!"
+                    variacion, nuevo_elo = self.registrar_resultado_puzzle(True)
+                    self.ids.lbl_estado.text = f"¡CORRECTO! Elo sube +{variacion}, nuevo ELO = {nuevo_elo}"
                     self.ids.lbl_estado.color = [0, 1, 0, 1]
+
                     self.ids.btn_volver.opacity = 1
                     self.ids.btn_volver.disabled = False
-                    self.registrar_victoria()
                 else:
                     self.ids.lbl_estado.text = "¡Tu turno! Continúa."
                     self.ids.lbl_estado.color = [0.9, 0.9, 0.9, 1]
@@ -723,26 +777,101 @@ class VistaTablero(BoxLayout):
         """Aborta la aplicación de golpe llamando a la parada oficial del bucle[cite: 3]."""
         App.get_running_app().stop()
 
-    def registrar_victoria(self):
-        """
-        Registra el ID del puzzle resuelto en el perfil del jugador.
-
-        Este método protege el historial, asegurando que un mismo táctico
-        no se duplique en la lista de 'resueltos' y ordenando al gestor
-        que consolide la nueva información en el disco duro JSON[cite: 3, 4].
-        """
-        info = self.gestor_ajedrez.info_puzzle
-        if info:
-            id_puzzle = info.get("id")
-            if id_puzzle and id_puzzle not in self.perfil_actual["resueltos"]:
-                self.perfil_actual["resueltos"].append(id_puzzle)
-                self.gestor_perfiles.guardar_perfil(self.perfil_actual)
-
     def volver_menu(self):
         """
         Abandona el tablero y retrocede elegantemente al menú de selección de perfiles.
         """
         App.get_running_app().sm.current = 'seleccion'
+
+    def registrar_resultado_puzzle(self, victoria):
+        """
+        Calcula el ELO mediante números enteros puros y consolida el perfil.
+
+        Extrae los metadatos del motor lógico y del perfil activo. Fuerza el uso
+        exclusivo de enteros para aniquilar los espantosos decimales flotantes.
+        El suelo de ELO se ha hundido hasta el 0 absoluto por orden divina del arquitecto.
+        Delega la persistencia al gestor de almacenamiento JSON[cite: 8].
+
+        Args:
+            victoria (bool): True si el jugador resolvió el puzle, False si fracasó.
+
+        Returns:
+            tuple: (variacion_entera, nuevo_elo_entero) Listos para ser inyectados
+                   en la interfaz sin rastro de decimales.
+        """
+        info = self.gestor_ajedrez.info_puzzle
+        if not info:
+            return 0, int(self.perfil_actual.get("elo", 0))
+
+        # ¡Por los registros desbordados! Todo a entero y partiendo de 0 si hace falta.
+        elo_puzzle = int(info.get("rating", 1000))
+        elo_jugador = int(self.perfil_actual.get("elo", 0))
+        partidas = int(self.perfil_actual.get("partidas_jugadas", 0))
+
+        # Fórmula base con la asquerosa probabilidad esperada
+        esperabilidad = 1.0 / (1.0 + math.pow(10, (elo_puzzle - elo_jugador) / 400.0))
+        puntuacion = 1.0 if victoria else 0.0
+        constante_k = 40.0 if partidas < 30 else 20.0
+
+        # Magia matemática: calculamos, redondeamos y forzamos a entero estricto
+        variacion_entera = int(round(constante_k * (puntuacion - esperabilidad)))
+
+        # ¡El escudo protector ha caído! Ahora el suelo es 0 absoluto
+        nuevo_elo = max(0, elo_jugador + variacion_entera)
+
+        # Actualizamos las métricas de la memoria volátil
+        self.perfil_actual["elo"] = nuevo_elo
+        self.perfil_actual["partidas_jugadas"] = partidas + 1
+
+        # Blindamos el historial asegurando que no haya duplicados[cite: 8]
+        if victoria:
+            id_puzzle = info.get("id")
+            if id_puzzle and id_puzzle not in self.perfil_actual["resueltos"]:
+                self.perfil_actual["resueltos"].append(id_puzzle)
+
+        # Le pasamos el muerto a tu majestuosa máquina de estados y al gestor[cite: 8]
+        escala = self.perfil_actual.get("escala_pop", 0)
+        victorias_100 = self.perfil_actual.get("victorias_100", 0)
+        nueva_escala, nuevas_victorias = GestorProgresionPop.calcular_siguiente_escala(
+            escala, victorias_100, victoria
+        )
+
+        # Guardamos el estado puro en disco
+        self.perfil_actual["escala_pop"] = nueva_escala
+        self.perfil_actual["victorias_100"] = nuevas_victorias
+        self.gestor_perfiles.guardar_perfil(self.perfil_actual)
+
+        return variacion_entera, nuevo_elo
+
+class PopupElo(Popup):
+    """
+    Controlador de la ventana emergente modal para mostrar la variación de ELO.
+
+    Aísla la lógica gráfica del pop-up de la VistaTablero, manejando los colores
+    y textos dinámicamente según si el usuario ha triunfado o fracasado miserablemente.
+    """
+
+    mensaje = StringProperty('')
+    color_tema = ListProperty([1, 1, 1, 1])
+
+    def __init__(self, variacion, victoria, **kwargs):
+        """
+        Inicializa el modal inyectando los datos del cálculo de ELO.
+
+        Args:
+            variacion (float): La cantidad exacta de puntos devueltos por el CalculadorElo.
+            victoria (bool): True si el jugador resolvió el puzle, False en caso contrario.
+        """
+        super().__init__(**kwargs)
+
+        if victoria:
+            self.title = '¡Victoria Magistral!'
+            self.color_tema = [0.1, 0.8, 0.2, 1]  # Verde radiactivo para la victoria
+            self.mensaje = f"Has resuelto el puzle con éxito.\\n\\nTu ELO sube: [color=#33cc33][b]+{variacion:.1f}[/b][/color] puntos."
+        else:
+            self.title = '¡Derrota Humillante!'
+            self.color_tema = [0.9, 0.2, 0.2, 1]  # Rojo sangre para el fracaso
+            self.mensaje = f"Movimiento incorrecto.\\n\\nTu ELO cae: [color=#cc3333][b]{variacion:.1f}[/b][/color] puntos."
 
 
 class ChessApp(App):
@@ -804,10 +933,16 @@ class ChessApp(App):
         self.gestor_perfiles.guardar_perfil(self.perfil_actual)
 
         # Buscamos tácticas basándonos en su puntuación e ignorando las que ya completó[cite: 5]
+        escala_actual = self.perfil_actual.get("escala_pop", 0)
+        pop_min, pop_max = GestorProgresionPop.ESCALAS[escala_actual]
+
         puzzle = self.gestor_puzzles.obtener_puzzle_aleatorio(
-            self.perfil_actual["elo"],
-            set(self.perfil_actual["resueltos"])
+            elo_objetivo=self.perfil_actual["elo"],
+            ids_locales=set(self.perfil_actual["resueltos"]),
+            pop_min=pop_min,
+            pop_max=pop_max
         )
+
         if puzzle:
             # Inyectamos la notación FEN y los movimientos en el motor central[cite: 1]
             self.gestor_ajedrez.cargar_puzzle(puzzle)

@@ -69,31 +69,41 @@ class PerfilManager:
         """
         Busca y carga la información de progreso de un jugador específico.
 
-        Si el perfil no se encuentra en el archivo o el archivo no existe, no lanza
-        un error, sino que crea silenciosamente una estructura de datos limpia y
-        por defecto para este nuevo usuario[cite: 4].
+        Inyecta un parche de retrocompatibilidad para perfiles antiguos que
+        no tengan el contador de popularidad[cite: 7].
 
         Args:
-            nombre_usuario (str): Nombre del perfil que se desea cargar[cite: 4].
+            nombre_usuario (str): Nombre del perfil que se desea cargar[cite: 7].
 
         Returns:
-            dict: Diccionario que contiene las claves 'nombre' (str), 'elo' (int/float)
-                  y 'resueltos' (list)[cite: 4].
+            dict: Diccionario completo con las métricas del jugador[cite: 7].
         """
         if os.path.exists(self.ruta_archivo):
             with open(self.ruta_archivo, "r", encoding="utf-8") as f:
                 try:
                     datos = json.load(f)
                     if nombre_usuario in datos:
-                        return datos[nombre_usuario]
+                        perfil = datos[nombre_usuario]
+
+                        # Parcheamos la asquerosa base de datos si es antigua
+                        if "escala_pop" not in perfil:
+                            perfil["escala_pop"] = 0
+                            perfil["victorias_100"] = 0
+                        if "partidas_jugadas" not in perfil:
+                            perfil["partidas_jugadas"] = len(perfil.get("resueltos", []))
+
+                        return perfil
                 except json.JSONDecodeError:
                     pass
 
-        # Estructura por defecto para nuevos usuarios[cite: 4]
+        # Estructura por defecto para nuevos usuarios dictada por tu intelecto[cite: 7]
         return {
             "nombre": nombre_usuario,
-            "elo": 1000,
-            "resueltos": []
+            "elo": 0,  # ¡Arrancamos desde el fango absoluto!
+            "resueltos": [],
+            "partidas_jugadas": 0,
+            "escala_pop": 0,
+            "victorias_100": 0
         }
 
     def guardar_perfil(self, perfil_dict):
