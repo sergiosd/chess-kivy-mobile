@@ -96,46 +96,71 @@ class ChessManager:
             self.casilla_seleccionada = None
             self.movimientos_validos = []
 
-    def intentar_movimiento_jugador(self, casilla_destino_str):
+    def intentar_movimiento_jugador(self, casilla_destino_str: str) -> bool:
         """
-        Intenta mover la pieza seleccionada a la casilla de destino y comprueba
-        si coincide con el movimiento exigido por el puzle.
+        Valida y ejecuta el intento de movimiento del usuario cruzándolo con la solución.
+
+        Este método compara las coordenadas de origen (previamente seleccionadas) y
+        destino (argumento) con el siguiente movimiento exigido por el puzle.
+        Gestiona explícitamente la coronación de peones inyectando la pieza
+        promocionada según lo dicta la notación UCI de la solución.
 
         Args:
-            casilla_destino_str (str): Coordenada del destino (ej. "e4").
+            casilla_destino_str (str): Cadena de texto que representa la coordenada
+                                       de destino en notación algebraica (ej. 'e1').
 
         Returns:
-            bool: True si el movimiento era correcto, False si fue erróneo.
+            bool: True si el movimiento era correcto y se ejecutó en el tablero,
+                  False si el movimiento fue incorrecto, ilegal o no hay selección.
         """
-        if not self.casilla_seleccionada or self.estado_puzzle != "JUGANDO": return False
+        # Verificamos que haya una pieza seleccionada y el juego esté activo[cite: 2]
+        if not self.casilla_seleccionada or self.estado_puzzle != "JUGANDO":
+            return False
 
+        # Convertimos las coordenadas alfanuméricas a índices numéricos de chess-python[cite: 2]
         origen_idx = chess.parse_square(self.casilla_seleccionada)
         destino_idx = chess.parse_square(casilla_destino_str)
-        move = chess.Move(origen_idx, destino_idx)
 
-        # Promoción automática a Reina si el movimiento base no es legal pero coronando sí lo es[cite: 1]
-        if move not in self.board.legal_moves:
-            move = chess.Move(origen_idx, destino_idx, promotion=chess.QUEEN)
+        # Extraemos el movimiento correcto esperado en el paso actual[cite: 2]
+        movimiento_esperado = self.solucion[self.paso_actual]
+        esperado_origen = chess.parse_square(movimiento_esperado[:2])
+        esperado_destino = chess.parse_square(movimiento_esperado[2:4])
 
-        if move in self.board.legal_moves:
-            movimiento_uci = move.uci()
-            movimiento_esperado = self.solucion[self.paso_actual]
+        # Verificamos si el origen y destino coinciden con la solución del puzle
+        if origen_idx == esperado_origen and destino_idx == esperado_destino:
+            # Si el movimiento esperado tiene 5 caracteres (ej. 'e2e1q'), es una coronación[cite: 2]
+            if len(movimiento_esperado) == 5:
+                pieza_promocion = chess.PIECE_SYMBOLS.index(movimiento_esperado[4])
+                move = chess.Move(origen_idx, destino_idx, promotion=pieza_promocion)
+            else:
+                move = chess.Move(origen_idx, destino_idx)
 
-            if movimiento_uci == movimiento_esperado:
+            # Si el movimiento construido es legal, lo aplicamos al tablero oficial[cite: 2]
+            if move in self.board.legal_moves:
                 self.board.push(move)
                 self.paso_actual += 1
                 self.casilla_seleccionada = None
                 self.movimientos_validos = []
 
-                # Comprobamos si el jugador dio el golpe final del puzle[cite: 1]
+                # Si hemos agotado la lista de la solución, el jugador gana el puzle[cite: 2]
                 if self.paso_actual >= len(self.solucion):
                     self.estado_puzzle = "VICTORIA"
                 return True
-            else:
-                # El movimiento era legal en ajedrez, pero incorrecto para resolver el puzle[cite: 1]
-                self.estado_puzzle = "DERROTA"
-                self.movimiento_fallado = movimiento_esperado
-                self.casilla_seleccionada = None
-                self.movimientos_validos = []
-                return False
+
+        # Si no era la solución correcta, debemos evaluar si fue un error legal
+        move_test = chess.Move(origen_idx, destino_idx)
+
+        # Si el movimiento falla por ser coronación omitida, probamos forzando a Reina[cite: 2]
+        if move_test not in self.board.legal_moves:
+            move_test = chess.Move(origen_idx, destino_idx, promotion=chess.QUEEN)
+
+        # Si el movimiento erróneo es al menos legal en ajedrez, se penaliza como DERROTA[cite: 2]
+        if move_test in self.board.legal_moves:
+            self.estado_puzzle = "DERROTA"
+            self.movimiento_fallado = movimiento_esperado
+            self.casilla_seleccionada = None
+            self.movimientos_validos = []
+            return False
+
+        # Si el movimiento ni siquiera es legal, lo ignoramos silenciosamente[cite: 2]
         return False

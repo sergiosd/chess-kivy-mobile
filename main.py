@@ -36,6 +36,7 @@ from kivy.graphics import Color, Line, Triangle
 from kivy.metrics import dp
 import chess
 import math
+from typing import Callable
 
 # Importación de nuestros robustos módulos lógicos[cite: 3]
 from chess_manager import ChessManager
@@ -186,6 +187,16 @@ Builder.load_string("""
             text: ''
             font_size: '14sp'
             color: 0.6, 0.6, 0.6, 1
+        # --- BOTÓN DE DEPURACIÓN INYECTADO ----------------------------------------------------
+        Button:
+            id: btn_test_popup
+            text: 'TEST: PUZZLE CORONACIÓN'
+            size_hint_y: None
+            height: dp(45)
+            background_color: 0.5, 0.1, 0.8, 1
+            # Llamamos al nuevo método inyectando el ID del puzzle de tu imagen
+            on_press: root.cargar_puzzle_prueba('1qC2F')
+        # --------------------------------------------------------------------------------------
 
         Button:
             id: btn_siguiente
@@ -300,6 +311,30 @@ Builder.load_string("""
                 background_color: 0.8, 0.2, 0.2, 1
                 bold: True
                 on_press: app.stop()
+<PopupCoronacion>:
+    title: '¡Coronación! Elige tu pieza'
+    title_font_size: '20sp'
+    size_hint: 0.85, 0.25
+    auto_dismiss: False
+    separator_color: 0.8, 0.6, 0.1, 1
+    
+    BoxLayout:
+        orientation: 'horizontal'
+        spacing: dp(15)
+        padding: dp(10)
+        
+        Button:
+            background_normal: root.img_reina
+            on_release: root.seleccionar_pieza('q')
+        Button:
+            background_normal: root.img_torre
+            on_release: root.seleccionar_pieza('r')
+        Button:
+            background_normal: root.img_alfil
+            on_release: root.seleccionar_pieza('b')
+        Button:
+            background_normal: root.img_caballo
+            on_release: root.seleccionar_pieza('n')
 """)
 
 from kivy.uix.screenmanager import Screen
@@ -555,70 +590,101 @@ class VistaTablero(BoxLayout):
             if self.gestor_ajedrez.estado_puzzle == "JUGANDO":
                 self.ids.lbl_estado.text = f"Tu turno: {color_turno}"
 
-    def al_tocar_casilla(self, nombre_casilla):
+    def al_tocar_casilla(self, nombre_casilla: str) -> None:
         """
-        Procesa la lógica central cuando un usuario pulsa una coordenada táctil.
+        Procesa la lógica gráfica y de estado al pulsar una coordenada táctil.
 
-        Valida el origen y destino. Si el movimiento pertenece a la solución,
-        lanza la animación de vuelo de la pieza y programa la respuesta enemiga.
-        Si es un error, reproduce un sonido vergonzoso, dibuja la flecha roja,
-        muestra la penalización simulada y desvela los temas del puzle.
+        Este método gestiona la interacción del usuario. Valida selecciones de
+        origen y destino. En caso de realizar un movimiento correcto, calcula la
+        textura resultante (crucial para capturar la metamorfosis visual de la
+        coronación) y lanza la animación. Mantiene intacta la llamada a la
+        traducción de temas tácticos al finalizar el puzle, tal y como solicitaste.
 
         Args:
-            nombre_casilla (str): Casilla en notación algebraica (ej. 'c3').
+            nombre_casilla (str): Identificador alfanumérico estándar de la casilla
+                                  pulsada por el usuario (ej. 'e1').
+
+        Returns:
+            None
         """
         gestor = self.gestor_ajedrez
 
+        # Verificamos si ya hay origen seleccionado y el destino es legal[cite: 3]
         if gestor.casilla_seleccionada and nombre_casilla in gestor.movimientos_validos:
             origen = gestor.casilla_seleccionada
             indice_origen = chess.parse_square(origen)
-            pieza = gestor.board.piece_at(indice_origen)
-            simbolo = pieza.symbol() if pieza else ''
 
+            # Capturamos la pieza ANTES de mover para la textura que volará en pantalla
+            pieza_antes = gestor.board.piece_at(indice_origen)
+            simbolo_vuelo = pieza_antes.symbol() if pieza_antes else ''
+
+            # Delegamos la validación lógica al Modelo (ChessManager)[cite: 3]
             exito = gestor.intentar_movimiento_jugador(nombre_casilla)
             self.limpiar_iluminacion()
 
             if exito:
+                # Reproducimos sonido de éxito[cite: 3]
                 if self.sonido_mover: self.sonido_mover.play()
 
+                # CRÍTICO: Capturamos la pieza DESPUÉS del movimiento para mostrar la coronación
+                indice_destino = chess.parse_square(nombre_casilla)
+                pieza_despues = gestor.board.piece_at(indice_destino)
+                simbolo_final = pieza_despues.symbol() if pieza_despues else simbolo_vuelo
+
                 self.actualizar_piezas_visuales()
+
+                # Vaciamos la textura de la casilla destino temporalmente para la animación[cite: 3]
                 self.diccionario_casillas[nombre_casilla].ruta_pieza = ''
 
-                def terminar_vuelo():
+                def terminar_vuelo() -> None:
+                    """
+                    Callback ejecutado automáticamente al finalizar la animación Kivy.
+                    Inyecta la textura final y evalúa si el puzle ha concluido.
+                    """
+                    # Asignamos la textura de la pieza resultante (ej. Reina en vez de Peón)
                     self.diccionario_casillas[nombre_casilla].ruta_pieza = self.mapa_imagenes.get(
-                        simbolo, '')
+                        simbolo_final, '')
+
                     if gestor.estado_puzzle == "VICTORIA":
                         if self.sonido_ganar: self.sonido_ganar.play()
+
+                        # Cálculo de ELO persistente[cite: 3]
                         variacion, nuevo_elo = self.registrar_resultado_puzzle(True)
                         self.ids.lbl_estado.text = f"¡CORRECTO!, nuevo ELO = {nuevo_elo} (+{variacion})"
                         self.ids.lbl_estado.color = [0, 1, 0, 1]
 
-                        # Inyectamos el conocimiento traducido al saborear la victoria
+                        # Inyectamos el conocimiento traducido al saborear la victoria (¡Respetado!)
                         self.mostrar_temas_traducidos()
 
                         self.ids.btn_volver.opacity = 1
                         self.ids.btn_volver.disabled = False
                     else:
+                        # Si no es victoria aún, preparamos la respuesta de la IA enemiga[cite: 3]
                         self.ids.lbl_estado.text = "¡Excelente! Responde la IA..."
                         self.ids.lbl_estado.color = [1, 1, 0, 1]
                         Clock.schedule_once(self.procesar_respuesta_ia, 0.4)
 
-                self.animar_pieza(origen, nombre_casilla, simbolo, terminar_vuelo)
+                # Disparamos la animación flotante sobre el tablero[cite: 3]
+                self.animar_pieza(origen, nombre_casilla, simbolo_vuelo, terminar_vuelo)
+
             else:
+                # Caso de movimiento erróneo (Derrota)[cite: 3]
                 self.actualizar_piezas_visuales()
                 if self.sonido_perder: self.sonido_perder.play()
 
+                # Penalización de ELO[cite: 3]
                 variacion, nuevo_elo = self.registrar_resultado_puzzle(False)
                 self.ids.lbl_estado.text = f"¡INCORRECTO! nuevo ELO = {nuevo_elo} ({variacion})"
                 self.ids.lbl_estado.color = [1, 0.4, 0.4, 1]
 
+                # Dibujamos vectores indicando la jugada que debió hacerse[cite: 3]
                 mov_erroneo = gestor.movimiento_fallado
                 if mov_erroneo:
                     self.mostrar_flecha_error(mov_erroneo)
 
                 info = gestor.info_puzzle
                 if info:
-                    # Reutilizamos el método limpio para el fracaso
+                    # Inyectamos el conocimiento traducido en la derrota (¡Respetado!)
                     self.mostrar_temas_traducidos()
                     self.ids.lbl_info.text = f"Nivel: {info.get('rating')} ELO"
 
@@ -626,6 +692,7 @@ class VistaTablero(BoxLayout):
                 self.ids.btn_volver.opacity = 1
                 self.ids.btn_volver.disabled = False
         else:
+            # Seleccionar nueva pieza si no estábamos intentando mover[cite: 3]
             gestor.seleccionar_casilla(nombre_casilla)
             self.iluminar_casillas()
             if gestor.casilla_seleccionada and self.sonido_seleccionar:
@@ -896,6 +963,46 @@ class VistaTablero(BoxLayout):
             temas_limpios = [DICCIONARIO_TEMAS.get(t, t.capitalize()) for t in temas_crudos]
             self.ids.lbl_temas.text = ' • '.join(temas_limpios)
 
+    
+
+    def cargar_puzzle_prueba(self, id_puzzle: str) -> None:
+        """
+        Fuerza la carga de un puzle específico para probar mecánicas complejas.
+
+        Solicita al PuzzleManager el puzle por su ID y reinicia completamente
+        el estado visual y lógico del tablero. Aniquila cualquier progreso
+        del puzle anterior para evitar bugs de colisión de estados[cite: 3].
+
+        Args:
+            id_puzzle (str): El identificador FEN/CSV del puzle a inyectar (ej. '1qC2F').
+
+        Returns:
+            None
+        """
+        # Exigimos el puzzle por la fuerza bruta a nuestro gestor[cite: 3]
+        puzzle_test = self.gestor_puzzles.obtener_puzzle_por_id(id_puzzle)
+
+        if puzzle_test:
+            # Reseteamos el motor lógico de ajedrez con el nuevo FEN
+            self.gestor_ajedrez.cargar_puzzle(puzzle_test)
+
+            # Forzamos a la burocracia de Kivy a redibujar todo desde cero[cite: 3]
+            self.inicializar_tablero()
+            self.actualizar_piezas_visuales()
+            self.limpiar_flecha()
+
+            # Reseteo estético del panel de información inferior[cite: 3]
+            self.ids.lbl_temas.text = "Modo Depuración Activo"
+            self.ids.btn_siguiente.text = "SIGUIENTE PUZZLE"
+            self.ids.btn_volver.opacity = 0
+            self.ids.btn_volver.disabled = True
+
+            # Le indicamos al jugador a quién le toca
+            es_blancas = self.gestor_ajedrez.board.turn == chess.WHITE
+            color_turno = "[color=#ffffff]BLANCAS[/color]" if es_blancas else "[color=#ff6b6b]NEGRAS[/color]"
+            self.ids.lbl_estado.text = f"Tu turno: {color_turno}"
+        else:
+            self.ids.lbl_estado.text = "[color=#ff0000]ERROR: Puzzle no encontrado.[/color]"
 
 class PopupElo(Popup):
     """
@@ -927,6 +1034,68 @@ class PopupElo(Popup):
             self.color_tema = [0.9, 0.2, 0.2, 1]  # Rojo sangre para el fracaso
             self.mensaje = f"Movimiento incorrecto.\\n\\nTu ELO cae: [color=#cc3333][b]{variacion:.1f}[/b][/color] puntos."
 
+
+class PopupCoronacion(Popup):
+    """
+    Ventana emergente modal (Popup) para seleccionar explícitamente la pieza de coronación.
+
+    Este componente visual de Kivy intercepta la interacción del usuario cuando
+    un peón alcanza la octava (o primera) fila. Despliega las cuatro opciones
+    reglamentarias (Reina, Torre, Alfil, Caballo) cargando dinámicamente las
+    texturas correspondientes al color del jugador.
+
+    Attributes:
+        img_reina (StringProperty): Ruta dinámica al sprite de la Reina.
+        img_torre (StringProperty): Ruta dinámica al sprite de la Torre.
+        img_alfil (StringProperty): Ruta dinámica al sprite del Alfil.
+        img_caballo (StringProperty): Ruta dinámica al sprite del Caballo.
+    """
+
+    # Enlaces mágicos con el parser KV de Kivy[cite: 3]
+    img_reina = StringProperty('')
+    img_torre = StringProperty('')
+    img_alfil = StringProperty('')
+    img_caballo = StringProperty('')
+
+    def __init__(self, color_pieza_blanca: bool, callback_seleccion: Callable[[str], None],
+                 **kwargs) -> None:
+        """
+        Inicializa el modal inyectando las texturas correctas según el color a coronar.
+
+        Args:
+            color_pieza_blanca (bool): True si el jugador corona piezas blancas,
+                                       False si corona piezas negras.
+            callback_seleccion (Callable[[str], None]): Función a invocar devolviendo
+                                                        el símbolo de la pieza elegida
+                                                        ('q', 'r', 'b', 'n').
+            **kwargs: Argumentos absorbidos implícitamente por el padre `Popup` de Kivy[cite: 3].
+        """
+        super().__init__(**kwargs)
+        self.callback_seleccion = callback_seleccion
+
+        # Aprovechamos la misma estructura de rutas y convenciones de nombres de tu mapa_imagenes[cite: 3]
+        prefijo = "blanco" if color_pieza_blanca else "negro"
+
+        self.img_reina = f"assets/pieces/{prefijo}_reina.png"
+        self.img_torre = f"assets/pieces/{prefijo}_torre.png"
+        self.img_alfil = f"assets/pieces/{prefijo}_alfil.png"
+        self.img_caballo = f"assets/pieces/{prefijo}_caballo.png"
+
+    def seleccionar_pieza(self, simbolo: str) -> None:
+        """
+        Captura la pulsación del usuario sobre un botón de pieza y despacha el símbolo.
+
+        Invoca el callback almacenado, inyectándole la letra FEN, y destruye la
+        ventana modal para devolverle el foco al tablero principal.
+
+        Args:
+            simbolo (str): Letra FEN minúscula de la pieza elegida ('q', 'r', 'b', 'n').
+
+        Returns:
+            None
+        """
+        self.callback_seleccion(simbolo)
+        self.dismiss()
 
 class ChessApp(App):
     """

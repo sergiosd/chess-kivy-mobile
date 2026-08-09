@@ -235,3 +235,44 @@ class PuzzleManager:
 
         return puzzle_elegido
 
+    def obtener_puzzle_por_id(self, id_buscado: str) -> dict:
+        """
+        Busca y extrae un puzle específico directamente por su identificador único.
+
+        Ignora los filtros de popularidad, ELO o temas. Realiza una búsqueda
+        lineal en el archivo CSV para localizar el ID exacto y devuelve el
+        diccionario formateado, ideal para test de integración o depuración[cite: 5].
+
+        Args:
+            id_buscado (str): El identificador único del puzle (ej. '1qC2F').
+
+        Returns:
+            dict: Diccionario con los datos del puzle ('id', 'fen', 'moves', etc.).
+                  Devuelve un diccionario vacío si no se encuentra el ID o hay un error.
+        """
+        try:
+            # Abrimos el infernal y pesado archivo CSV[cite: 5]
+            with open(self.ruta_csv, mode='r', encoding='utf-8') as archivo:
+                lector_csv = csv.reader(archivo)
+                next(lector_csv, None)  # Nos saltamos las inútiles cabeceras
+
+                for fila in lector_csv:
+                    # Validamos que la fila no esté corrupta[cite: 5]
+                    if len(fila) < 8:
+                        continue
+
+                    # ¡Bingo! Encontramos la aguja en el pajar de texto
+                    if fila[0] == id_buscado:
+                        return {
+                            "id": fila[0],
+                            "fen": fila[1],
+                            "moves": fila[2].split(" "),
+                            "rating": int(fila[3]),
+                            "popularity": int(fila[5]),
+                            "themes": fila[7]
+                        }
+        except FileNotFoundError:
+            print(
+                f"ERROR: ¡Por la sandalia de un romano! No encuentro la base de datos {self.ruta_csv}.")
+
+        return {}
