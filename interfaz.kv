@@ -1,0 +1,549 @@
+<Casilla>:
+    ruta_fondo: ''
+    ruta_pieza: ''
+    origen_seleccionado: False
+    destino_valido: False
+    texto_fila: ''
+    texto_col: ''
+
+    canvas.before:
+        Color:
+            rgba: (1, 1, 1, 1)
+        Rectangle:
+            pos: 0, 0
+            size: self.size
+            source: root.ruta_fondo
+        Color:
+            rgba: (1, 1, 0, 0.4) if root.origen_seleccionado else (0, 0, 0, 0)
+        Rectangle:
+            pos: 0, 0
+            size: self.size
+
+    canvas.after:
+        Color:
+            rgba: (0, 0.7, 0, 0.8) if root.destino_valido else (0, 0, 0, 0)
+        Ellipse:
+            size: self.width / 4, self.height / 4
+            pos: self.center_x - self.width / 8, self.center_y - self.height / 8
+
+    Image:
+        source: root.ruta_pieza
+        opacity: 1 if root.ruta_pieza else 0
+        fit_mode: 'contain'
+        size_hint: 0.85, 0.85
+        pos_hint: {'center_x': 0.5, 'center_y': 0.5}
+
+    Label:
+        text: root.texto_fila
+        font_size: '12sp'
+        bold: True
+        color: 0.1, 0.1, 0.1, 0.8
+        size_hint: None, None
+        size: self.texture_size
+        pos_hint: {'x': 0.05, 'top': 0.95}
+
+    Label:
+        text: root.texto_col
+        font_size: '12sp'
+        bold: True
+        color: 0.1, 0.1, 0.1, 0.8
+        size_hint: None, None
+        size: self.texture_size
+        pos_hint: {'right': 0.95, 'y': 0.05}
+
+<VistaTablero>:
+    orientation: 'vertical'
+    padding: dp(20)
+    spacing: dp(10)
+    canvas.before:
+        Color:
+            rgba: 0.12, 0.29, 0.42, 1
+        Rectangle:
+            pos: self.pos
+            size: self.size
+
+    Label:
+        id: lbl_mision
+        text: 'Puzzle ELO: --'
+        font_size: '28sp'
+        bold: True
+        size_hint_y: 0.15
+        color: 0.1, 0.8, 0.8, 1
+
+    AnchorLayout:
+        size_hint_y: 0.55
+        BoxLayout:
+            size_hint: None, None
+            width: cuadricula_tablero.width + dp(4)
+            height: cuadricula_tablero.height + dp(4)
+            canvas.before:
+                Color:
+                    rgba: 0.8, 0.6, 0.1, 1
+                Line:
+                    width: 1.5
+                    rectangle: self.x, self.y, self.width, self.height
+            GridLayout:
+                id: cuadricula_tablero
+                cols: 8
+                rows: 8
+                size_hint: None, None
+                width: min(root.width - dp(40), root.height * 0.55)
+                height: self.width
+
+    BoxLayout:
+        id: panel_inferior
+        orientation: 'vertical'
+        size_hint_y: 0.35
+        spacing: dp(8)
+
+        Label:
+            id: lbl_estado
+            text: 'Esperando despliegue...'
+            font_size: '22sp'
+            bold: True
+            markup: True
+            color: 0.9, 0.9, 0.9, 1
+
+        Label:
+            id: lbl_info
+            text: 'Nivel: --'
+            font_size: '18sp'
+            color: 0, 0.8, 0.7, 1
+            bold: True
+
+        Label:
+            id: lbl_temas
+            text: ''
+            font_size: '14sp'
+            color: 0.6, 0.6, 0.6, 1
+        # --- BOTÓN DE DEPURACIÓN INYECTADO ----------------------------------------------------
+        # Button:
+        #    id: btn_test_popup
+        #    text: 'TEST: PUZZLE CORONACIÓN'
+        #    size_hint_y: None
+        #    height: dp(45)
+        #    background_color: 0.5, 0.1, 0.8, 1
+        #    # Llamamos al nuevo método inyectando el ID del puzzle de tu imagen
+        #    on_press: root.cargar_puzzle_prueba('1qC2F')
+        # --------------------------------------------------------------------------------------
+
+        Button:
+            id: btn_siguiente
+            text: 'SIGUIENTE PUZZLE'
+            size_hint_y: None
+            height: dp(45)
+            background_color: 0, 0.7, 0.5, 1
+            on_press: root.cargar_siguiente_puzzle()
+
+        Button:
+            id: btn_volver
+            text: 'VOLVER AL MENÚ'
+            size_hint_y: None
+            height: dp(45)
+            background_color: 0.8, 0.4, 0.1, 1
+            opacity: 0
+            disabled: True
+            on_press: root.volver_menu()
+<PopupElo>:
+    title_font_size: '20sp'
+    size_hint: 0.75, 0.35
+    auto_dismiss: False
+    separator_color: root.color_tema
+
+    BoxLayout:
+        orientation: 'vertical'
+        padding: dp(20)
+        spacing: dp(15)
+
+        Label:
+            text: root.mensaje
+            font_size: '18sp'
+            markup: True
+            halign: 'center'
+            valign: 'middle'
+            text_size: self.size
+
+        Button:
+            text: 'Aceptar'
+            size_hint_y: None
+            height: dp(50)
+            background_color: root.color_tema
+            bold: True
+            on_release: root.dismiss()
+
+<PantallaCambiarUsuario>:
+    BoxLayout:
+        orientation: 'vertical'
+        padding: dp(30)
+        spacing: dp(15)
+        canvas.before:
+            Color:
+                rgba: 0.12, 0.29, 0.42, 1
+            Rectangle:
+                pos: self.pos
+                size: self.size
+
+        Label:
+            text: '[b]SELECCIONA OTRO PERFIL[/b]'
+            markup: True
+            halign: 'center'
+            font_size: '28sp'
+            color: 0.2, 0.8, 0.4, 1
+            size_hint_y: 0.15
+
+        ScrollView:
+            size_hint_y: 0.65
+            GridLayout:
+                id: grid_perfiles
+                cols: 1
+                spacing: dp(10)
+                size_hint_y: None
+                height: self.minimum_height
+
+        Button:
+            text: 'VOLVER AL MENÚ'
+            size_hint_y: None
+            height: dp(60)
+            background_color: 0.8, 0.4, 0.1, 1
+            bold: True
+            on_release: root.volver()
+<PopupCoronacion>:
+    title: '¡Coronación! Elige tu pieza'
+    title_font_size: '20sp'
+    size_hint: 0.85, 0.25
+    auto_dismiss: False
+    separator_color: 0.8, 0.6, 0.1, 1
+
+    BoxLayout:
+        orientation: 'horizontal'
+        spacing: dp(15)
+        padding: dp(10)
+
+        Button:
+            background_normal: root.img_reina
+            on_release: root.seleccionar_pieza('q')
+        Button:
+            background_normal: root.img_torre
+            on_release: root.seleccionar_pieza('r')
+        Button:
+            background_normal: root.img_alfil
+            on_release: root.seleccionar_pieza('b')
+        Button:
+            background_normal: root.img_caballo
+            on_release: root.seleccionar_pieza('n')
+
+<PantallaMenuPrincipal>:
+    BoxLayout:
+        orientation: 'vertical'
+        padding: dp(40)
+        spacing: dp(20)
+        canvas.before:
+            Color:
+                # Mantenemos ese azul corporativo elegante de fondo
+                rgba: 0.12, 0.29, 0.42, 1
+            Rectangle:
+                pos: self.pos
+                size: self.size
+
+        Label:
+            text: '[b]MIND CHESS[/b]'
+            markup: True
+            halign: 'center'
+            font_size: '42sp'
+            color: 0.1, 0.8, 0.8, 1
+            size_hint_y: 0.25
+
+        Label:
+            id: lbl_usuario
+            text: 'USUARIO: '
+            font_size: '28sp'
+            color: 1, 1, 1, 1
+            bold: True
+            size_hint_y: 0.15
+
+        Button:
+            text: 'CONFIGURACIÓN'
+            size_hint_y: None
+            height: dp(60)
+            background_color: 0.2, 0.6, 0.8, 1
+            bold: True
+            on_release: root.abrir_configuracion()
+
+        Button:
+            text: 'CAMBIAR USUARIO'
+            size_hint_y: None
+            height: dp(60)
+            background_color: 0.2, 0.8, 0.4, 1
+            bold: True
+            on_release: root.cambiar_usuario()
+
+        Button:
+            text: 'GESTIÓN DE USUARIOS'
+            size_hint_y: None
+            height: dp(60)
+            background_color: 0.8, 0.6, 0.1, 1
+            bold: True
+            on_release: root.gestionar_usuarios()
+
+        Button:
+            text: 'SALIR DEL JUEGO'
+            size_hint_y: None
+            height: dp(60)
+            background_color: 0.8, 0.2, 0.2, 1
+            bold: True
+            on_release: app.stop()
+<PopupCambiarElo>:
+    title: 'Modificar ELO'
+    size_hint: 0.8, 0.4
+    auto_dismiss: False
+
+    BoxLayout:
+        orientation: 'vertical'
+        padding: dp(20)
+        spacing: dp(15)
+
+        Label:
+            id: lbl_elo_actual
+            text: 'ELO Actual: --'
+            font_size: '18sp'
+
+        TextInput:
+            id: input_nuevo_elo
+            hint_text: 'Introduce nuevo ELO'
+            input_filter: 'int'
+            multiline: False
+            font_size: '18sp'
+
+        BoxLayout:
+            size_hint_y: None
+            height: dp(50)
+            spacing: dp(15)
+
+            Button:
+                text: 'Cancelar'
+                background_color: 0.5, 0.5, 0.5, 1
+                on_release: root.dismiss()
+
+            Button:
+                text: 'Guardar'
+                background_color: 0.2, 0.8, 0.4, 1
+                bold: True
+                on_release: root.guardar_cambios()
+
+<PopupBorrarRegistros>:
+    title: '¡Peligro! Borrar Historial'
+    size_hint: 0.8, 0.4
+    auto_dismiss: False
+    separator_color: 1, 0, 0, 1
+
+    BoxLayout:
+        orientation: 'vertical'
+        padding: dp(20)
+        spacing: dp(15)
+
+        Label:
+            id: lbl_puzzles
+            text: 'Puzzles resueltos: --'
+            font_size: '18sp'
+
+        Label:
+            text: '¿Borrar absolutamente todo?'
+            color: 1, 0.2, 0.2, 1
+            font_size: '16sp'
+            bold: True
+
+        BoxLayout:
+            size_hint_y: None
+            height: dp(50)
+            spacing: dp(15)
+
+            Button:
+                text: 'Cancelar'
+                background_color: 0.5, 0.5, 0.5, 1
+                on_release: root.dismiss()
+
+            Button:
+                text: 'ELIMINAR'
+                background_color: 0.8, 0.2, 0.2, 1
+                bold: True
+                on_release: root.confirmar_borrado()
+
+<PantallaConfiguracion>:
+    BoxLayout:
+        orientation: 'vertical'
+        padding: dp(30)
+        spacing: dp(15)
+        canvas.before:
+            Color:
+                rgba: 0.12, 0.29, 0.42, 1
+            Rectangle:
+                pos: self.pos
+                size: self.size
+
+        Label:
+            id: lbl_usuario
+            text: 'Usuario'
+            font_size: '34sp'
+            bold: True
+            size_hint_y: 0.15
+            color: 1, 1, 1, 1
+
+        Button:
+            text: 'CAMBIAR ELO'
+            size_hint_y: None
+            height: dp(55)
+            background_color: 0.2, 0.6, 0.8, 1
+            bold: True
+            on_release: root.abrir_popup_elo()
+
+        Button:
+            text: 'BORRAR REGISTROS'
+            size_hint_y: None
+            height: dp(55)
+            background_color: 0.8, 0.2, 0.2, 1
+            bold: True
+            on_release: root.abrir_popup_registros()
+
+        Label:
+            text: 'JUGAR'
+            font_size: '28sp'
+            bold: True
+            size_hint_y: 0.1
+            color: 0.1, 0.8, 0.8, 1
+
+        Button:
+            text: 'GENERAL'
+            size_hint_y: None
+            height: dp(55)
+            background_color: 0.2, 0.8, 0.4, 1
+            bold: True
+            on_release: root.jugar_general()
+
+        Button:
+            text: 'TEMAS'
+            size_hint_y: None
+            height: dp(55)
+            background_color: 0.5, 0.5, 0.5, 1
+            bold: True
+
+        Button:
+            text: 'ESCUELA'
+            size_hint_y: None
+            height: dp(55)
+            background_color: 0.5, 0.5, 0.5, 1
+            bold: True
+
+        Widget:
+            size_hint_y: 0.1
+
+        Button:
+            text: 'VOLVER AL MENÚ'
+            size_hint_y: None
+            height: dp(55)
+            background_color: 0.8, 0.6, 0.1, 1
+            bold: True
+            on_release: root.volver_menu()
+
+<PopupBorrarUsuario>:
+    title: 'Confirmar Ejecución'
+    size_hint: 0.8, 0.35
+    auto_dismiss: False
+    separator_color: 1, 0, 0, 1
+
+    BoxLayout:
+        orientation: 'vertical'
+        padding: dp(20)
+        spacing: dp(15)
+
+        Label:
+            text: root.mensaje
+            font_size: '16sp'
+            markup: True
+            halign: 'center'
+            text_size: self.size
+
+        BoxLayout:
+            size_hint_y: None
+            height: dp(50)
+            spacing: dp(15)
+
+            Button:
+                text: 'Cancelar'
+                background_color: 0.5, 0.5, 0.5, 1
+                on_release: root.dismiss()
+
+            Button:
+                text: 'ELIMINAR'
+                background_color: 0.8, 0.2, 0.2, 1
+                bold: True
+                on_release: root.confirmar_borrado()
+
+<PantallaGestionUsuarios>:
+    BoxLayout:
+        orientation: 'vertical'
+        padding: dp(30)
+        spacing: dp(15)
+        canvas.before:
+            Color:
+                rgba: 0.12, 0.29, 0.42, 1
+            Rectangle:
+                pos: self.pos
+                size: self.size
+
+        Label:
+            text: '[b]GESTIÓN DE USUARIOS[/b]'
+            markup: True
+            halign: 'center'
+            font_size: '28sp'
+            color: 0.8, 0.6, 0.1, 1
+            size_hint_y: 0.15
+
+        ScrollView:
+            size_hint_y: 0.45
+            GridLayout:
+                id: grid_usuarios
+                cols: 1
+                spacing: dp(10)
+                size_hint_y: None
+                height: self.minimum_height
+
+        BoxLayout:
+            orientation: 'vertical'
+            size_hint_y: 0.4
+            spacing: dp(10)
+
+            BoxLayout:
+                orientation: 'horizontal'
+                size_hint_y: None
+                height: dp(45)
+                spacing: dp(10)
+
+                TextInput:
+                    id: input_nuevo_nombre
+                    hint_text: 'Nuevo usuario...'
+                    multiline: False
+                    font_size: '18sp'
+
+                TextInput:
+                    id: input_nuevo_elo
+                    hint_text: 'ELO'
+                    input_filter: 'int'
+                    multiline: False
+                    font_size: '18sp'
+                    size_hint_x: 0.5
+
+            Button:
+                text: 'CREAR PERFIL NUEVO'
+                size_hint_y: None
+                height: dp(50)
+                background_color: 0.2, 0.8, 0.4, 1
+                bold: True
+                on_release: root.crear_usuario()
+
+            Button:
+                text: 'VOLVER AL MENÚ'
+                size_hint_y: None
+                height: dp(50)
+                background_color: 0.8, 0.4, 0.1, 1
+                bold: True
+                on_release: root.volver_menu()

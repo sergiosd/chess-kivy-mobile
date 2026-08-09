@@ -37,11 +37,12 @@ from kivy.metrics import dp
 import chess
 import math
 from typing import Callable
+import os
 
 # Importación de nuestros robustos módulos lógicos[cite: 3]
 from chess_manager import ChessManager
 from puzzle_manager import PuzzleManager, GestorProgresionPop
-from perfil_manager import PerfilManager
+from perfil_manager import PerfilManager, PantallaMenuPrincipal
 from utilidades import CalculadorElo
 
 
@@ -68,307 +69,25 @@ DICCIONARIO_TEMAS = {
 Window.size = (450, 800)
 
 # Diseño KV purgado y estructurado sin errores de indentación en el parser[cite: 3]
-Builder.load_string("""
-<Casilla>:
-    ruta_fondo: ''
-    ruta_pieza: ''
-    origen_seleccionado: False
-    destino_valido: False
-    texto_fila: ''
-    texto_col: ''
-
-    canvas.before:
-        Color:
-            rgba: (1, 1, 1, 1)
-        Rectangle:
-            pos: 0, 0
-            size: self.size
-            source: root.ruta_fondo
-        Color:
-            rgba: (1, 1, 0, 0.4) if root.origen_seleccionado else (0, 0, 0, 0)
-        Rectangle:
-            pos: 0, 0
-            size: self.size
-
-    canvas.after:
-        Color:
-            rgba: (0, 0.7, 0, 0.8) if root.destino_valido else (0, 0, 0, 0)
-        Ellipse:
-            size: self.width / 4, self.height / 4
-            pos: self.center_x - self.width / 8, self.center_y - self.height / 8
-
-    Image:
-        source: root.ruta_pieza
-        opacity: 1 if root.ruta_pieza else 0
-        fit_mode: 'contain'
-        size_hint: 0.85, 0.85
-        pos_hint: {'center_x': 0.5, 'center_y': 0.5}
-
-    Label:
-        text: root.texto_fila
-        font_size: '12sp'
-        bold: True
-        color: 0.1, 0.1, 0.1, 0.8
-        size_hint: None, None
-        size: self.texture_size
-        pos_hint: {'x': 0.05, 'top': 0.95}
-
-    Label:
-        text: root.texto_col
-        font_size: '12sp'
-        bold: True
-        color: 0.1, 0.1, 0.1, 0.8
-        size_hint: None, None
-        size: self.texture_size
-        pos_hint: {'right': 0.95, 'y': 0.05}
-
-<VistaTablero>:
-    orientation: 'vertical'
-    padding: dp(20)
-    spacing: dp(10)
-    canvas.before:
-        Color:
-            rgba: 0.12, 0.29, 0.42, 1
-        Rectangle:
-            pos: self.pos
-            size: self.size
-
-    Label:
-        id: lbl_mision
-        text: 'Puzzle ELO: --'
-        font_size: '28sp'
-        bold: True
-        size_hint_y: 0.15
-        color: 0.1, 0.8, 0.8, 1
-
-    AnchorLayout:
-        size_hint_y: 0.55
-        BoxLayout:
-            size_hint: None, None
-            width: cuadricula_tablero.width + dp(4)
-            height: cuadricula_tablero.height + dp(4)
-            canvas.before:
-                Color:
-                    rgba: 0.8, 0.6, 0.1, 1
-                Line:
-                    width: 1.5
-                    rectangle: self.x, self.y, self.width, self.height
-            GridLayout:
-                id: cuadricula_tablero
-                cols: 8
-                rows: 8
-                size_hint: None, None
-                width: min(root.width - dp(40), root.height * 0.55)
-                height: self.width
-
-    BoxLayout:
-        id: panel_inferior
-        orientation: 'vertical'
-        size_hint_y: 0.35
-        spacing: dp(8)
-
-        Label:
-            id: lbl_estado
-            text: 'Esperando despliegue...'
-            font_size: '22sp'
-            bold: True
-            markup: True
-            color: 0.9, 0.9, 0.9, 1
-
-        Label:
-            id: lbl_info
-            text: 'Nivel: --'
-            font_size: '18sp'
-            color: 0, 0.8, 0.7, 1
-            bold: True
-
-        Label:
-            id: lbl_temas
-            text: ''
-            font_size: '14sp'
-            color: 0.6, 0.6, 0.6, 1
-        # --- BOTÓN DE DEPURACIÓN INYECTADO ----------------------------------------------------
-        Button:
-            id: btn_test_popup
-            text: 'TEST: PUZZLE CORONACIÓN'
-            size_hint_y: None
-            height: dp(45)
-            background_color: 0.5, 0.1, 0.8, 1
-            # Llamamos al nuevo método inyectando el ID del puzzle de tu imagen
-            on_press: root.cargar_puzzle_prueba('1qC2F')
-        # --------------------------------------------------------------------------------------
-
-        Button:
-            id: btn_siguiente
-            text: 'SIGUIENTE PUZZLE'
-            size_hint_y: None
-            height: dp(45)
-            background_color: 0, 0.7, 0.5, 1
-            on_press: root.cargar_siguiente_puzzle()
-
-        Button:
-            id: btn_volver
-            text: 'VOLVER AL MENÚ'
-            size_hint_y: None
-            height: dp(45)
-            background_color: 0.8, 0.4, 0.1, 1
-            opacity: 0
-            disabled: True
-            on_press: root.volver_menu()
-<PopupElo>:
-    title_font_size: '20sp'
-    size_hint: 0.75, 0.35
-    auto_dismiss: False
-    separator_color: root.color_tema
-    
-    BoxLayout:
-        orientation: 'vertical'
-        padding: dp(20)
-        spacing: dp(15)
-        
-        Label:
-            text: root.mensaje
-            font_size: '18sp'
-            markup: True
-            halign: 'center'
-            valign: 'middle'
-            text_size: self.size
-            
-        Button:
-            text: 'Aceptar'
-            size_hint_y: None
-            height: dp(50)
-            background_color: root.color_tema
-            bold: True
-            on_release: root.dismiss()
-            
-<PantallaSeleccion>:
-    BoxLayout:
-        orientation: 'vertical'
-        padding: dp(30)
-        spacing: dp(15)
-        canvas.before:
-            Color:
-                rgba: 0.12, 0.29, 0.42, 1
-            Rectangle:
-                pos: self.pos
-                size: self.size
-        
-        Label:
-            text: '[b]MIND CHESS[/b]\\nSelecciona tu Perfil'
-            markup: True
-            halign: 'center'
-            font_size: '28sp'
-            color: 0.1, 0.8, 0.8, 1
-            size_hint_y: 0.2
-            
-        ScrollView:
-            size_hint_y: 0.4
-            GridLayout:
-                id: grid_perfiles
-                cols: 1
-                spacing: dp(10)
-                size_hint_y: None
-                height: self.minimum_height
-                
-        BoxLayout:
-            orientation: 'vertical'
-            size_hint_y: 0.4
-            spacing: dp(10)
-            
-            BoxLayout:
-                orientation: 'horizontal'
-                size_hint_y: None
-                height: dp(45)
-                spacing: dp(10)
-                
-                TextInput:
-                    id: input_nuevo
-                    hint_text: 'Nuevo usuario...'
-                    multiline: False
-                    font_size: '18sp'
-                    
-                TextInput:
-                    id: input_elo
-                    hint_text: 'ELO'
-                    input_filter: 'int'
-                    multiline: False
-                    font_size: '18sp'
-                    size_hint_x: 0.5
-                
-            Button:
-                text: 'CREAR PERFIL NUEVO'
-                size_hint_y: None
-                height: dp(50)
-                background_color: 0.8, 0.6, 0.1, 1
-                bold: True
-                on_press: root.crear_perfil()
-                
-            Button:
-                text: 'SALIR DEL JUEGO'
-                size_hint_y: None
-                height: dp(50)
-                background_color: 0.8, 0.2, 0.2, 1
-                bold: True
-                on_press: app.stop()
-<PopupCoronacion>:
-    title: '¡Coronación! Elige tu pieza'
-    title_font_size: '20sp'
-    size_hint: 0.85, 0.25
-    auto_dismiss: False
-    separator_color: 0.8, 0.6, 0.1, 1
-    
-    BoxLayout:
-        orientation: 'horizontal'
-        spacing: dp(15)
-        padding: dp(10)
-        
-        Button:
-            background_normal: root.img_reina
-            on_release: root.seleccionar_pieza('q')
-        Button:
-            background_normal: root.img_torre
-            on_release: root.seleccionar_pieza('r')
-        Button:
-            background_normal: root.img_alfil
-            on_release: root.seleccionar_pieza('b')
-        Button:
-            background_normal: root.img_caballo
-            on_release: root.seleccionar_pieza('n')
-""")
+Builder.load_file('interfaz.kv')
 
 from kivy.uix.screenmanager import Screen
 from kivy.uix.button import Button
 from kivy.metrics import dp
 
 
-class PantallaSeleccion(Screen):
+class PantallaCambiarUsuario(Screen):
     """
-    Vista y controlador de la pantalla inicial de selección de usuarios.
-
-    Hereda de la clase Screen de Kivy. Su rol en el patrón MVC es gestionar la
-    creación de nuevos perfiles (incluyendo la validación de un ELO mínimo) y
-    despachar el evento para iniciar el juego o cerrar la aplicación.
+    Vista para alternar entre los perfiles existentes.
     """
 
     def __init__(self, gestor_perfiles, al_seleccionar, **kwargs):
-        """
-        Inicializa la pantalla de selección inyectando sus dependencias.
-
-        Args:
-            gestor_perfiles (PerfilManager): Referencia al modelo de persistencia de datos[cite: 4].
-            al_seleccionar (callable): Función callback para iniciar el tablero.
-            **kwargs: Argumentos para el inicializador de Kivy[cite: 3].
-        """
         super().__init__(**kwargs)
         self.gestor_perfiles = gestor_perfiles
         self.al_seleccionar = al_seleccionar
         self.poblar_perfiles()
 
     def poblar_perfiles(self):
-        """
-        Genera los botones interactivos dinámicamente según los usuarios registrados.
-        """
         self.ids.grid_perfiles.clear_widgets()
         usuarios = self.gestor_perfiles.obtener_lista_usuarios()
 
@@ -380,37 +99,17 @@ class PantallaSeleccion(Screen):
                 background_color=(0, 0.7, 0.5, 1),
                 bold=True
             )
+            # Pasamos el nombre al callback para cargar el perfil
             btn.bind(on_press=lambda instance, nombre=u: self.al_seleccionar(nombre))
             self.ids.grid_perfiles.add_widget(btn)
 
-    def crear_perfil(self):
-        """
-        Captura el nombre y el ELO para registrar un nuevo jugador.
+    def on_pre_enter(self, *args):
+        # Refresca la lista cada vez que la pantalla se va a mostrar
+        self.poblar_perfiles()
 
-        Valida que el ELO introducido sea un número válido y garantiza que
-        sea igual o superior a 600 puntos. Tras configurar el diccionario,
-        lo persiste en el almacenamiento local[cite: 4].
-        """
-        nombre = self.ids.input_nuevo.text.strip()
-        texto_elo = self.ids.input_elo.text.strip()
-
-        if nombre:
-            try:
-                elo_inicial = int(texto_elo)
-            except ValueError:
-                # Si el campo está vacío o el sádico usuario metió basura, fijamos el mínimo
-                elo_inicial = 0
-
-            # Forzamos matemáticamente el suelo de 600 puntos de ELO
-            elo_inicial = max(0, elo_inicial)
-
-            nuevo_perfil = self.gestor_perfiles.cargar_perfil(nombre)
-            nuevo_perfil["elo"] = elo_inicial
-            self.gestor_perfiles.guardar_perfil(nuevo_perfil)
-
-            self.ids.input_nuevo.text = ''
-            self.ids.input_elo.text = ''
-            self.poblar_perfiles()
+    def volver(self):
+        from kivy.app import App
+        App.get_running_app().sm.current = 'menu_principal'
 
 class Casilla(ButtonBehavior, RelativeLayout):
     """
@@ -963,7 +662,7 @@ class VistaTablero(BoxLayout):
             temas_limpios = [DICCIONARIO_TEMAS.get(t, t.capitalize()) for t in temas_crudos]
             self.ids.lbl_temas.text = ' • '.join(temas_limpios)
 
-    
+
 
     def cargar_puzzle_prueba(self, id_puzzle: str) -> None:
         """
@@ -1097,6 +796,274 @@ class PopupCoronacion(Popup):
         self.callback_seleccion(simbolo)
         self.dismiss()
 
+
+class PopupCambiarElo(Popup):
+    """
+    Controlador modal para sobrescribir la puntuación del jugador.
+    """
+
+    def __init__(self, perfil_actual, gestor_perfiles, **kwargs):
+        super().__init__(**kwargs)
+        self.perfil_actual = perfil_actual
+        self.gestor_perfiles = gestor_perfiles
+        self.ids.lbl_elo_actual.text = f"ELO Actual: {self.perfil_actual.get('elo', 0)}"
+
+    def guardar_cambios(self) -> None:
+        """Valida el texto, actualiza el diccionario y persiste en disco."""
+        texto = self.ids.input_nuevo_elo.text.strip()
+        if texto:
+            try:
+                nuevo_elo = int(texto)
+                self.perfil_actual["elo"] = max(0, nuevo_elo)
+                self.gestor_perfiles.guardar_perfil(self.perfil_actual)
+            except ValueError:
+                pass
+        self.dismiss()
+
+
+class PopupBorrarRegistros(Popup):
+    """
+    Controlador modal para purgar el historial de tácticas completadas.
+    """
+
+    def __init__(self, perfil_actual, gestor_perfiles, **kwargs):
+        super().__init__(**kwargs)
+        self.perfil_actual = perfil_actual
+        self.gestor_perfiles = gestor_perfiles
+        resueltos = len(self.perfil_actual.get('resueltos', []))
+        self.ids.lbl_puzzles.text = f"Puzzles resueltos: {resueltos}"
+
+    def confirmar_borrado(self) -> None:
+        """Aniquila las listas del perfil y reinicia contadores."""
+        self.perfil_actual["resueltos"] = []
+        self.perfil_actual["partidas_jugadas"] = 0
+        self.perfil_actual["escala_pop"] = 0
+        self.perfil_actual["victorias_100"] = 0
+        self.gestor_perfiles.guardar_perfil(self.perfil_actual)
+        self.dismiss()
+
+
+class PopupBorrarUsuario(Popup):
+    """
+    Controlador modal para la destrucción irreversible de perfiles.
+
+    Intercepta la intención de borrado para evitar que un misclick destruya
+    meses de tácticas resueltas. Delega la eliminación física al sistema operativo.
+    """
+    mensaje = StringProperty('')
+
+    def __init__(self, nombre_usuario, pantalla_padre, gestor_perfiles, **kwargs):
+        """
+        Inicializa la advertencia de aniquilación de datos.
+
+        Args:
+            nombre_usuario (str): Identificador exacto del archivo a eliminar.
+            pantalla_padre (PantallaGestionUsuarios): Referencia a la vista contenedora
+                                                      para forzar su repintado.
+            gestor_perfiles (PerfilManager): Interfaz de acceso al disco.
+        """
+        super().__init__(**kwargs)
+        self.nombre_usuario = nombre_usuario
+        self.pantalla_padre = pantalla_padre
+        self.gestor_perfiles = gestor_perfiles
+        self.mensaje = f"¿Destruir para siempre el perfil de [b]{nombre_usuario}[/b]?"
+
+    def confirmar_borrado(self) -> None:
+        """
+        Ejecuta la eliminación física del archivo JSON del sistema.
+        """
+        ruta = os.path.join(self.gestor_perfiles.directorio, f"{self.nombre_usuario}.json")
+        if os.path.exists(ruta):
+            os.remove(ruta)
+
+        ultimo = self.gestor_perfiles.obtener_ultimo_usuario()
+        if ultimo == self.nombre_usuario:
+            self.gestor_perfiles.fijar_ultimo_usuario("")
+
+        self.pantalla_padre.poblar_usuarios()
+        self.dismiss()
+
+
+class PantallaGestionUsuarios(Screen):
+    """
+    Panel de administración para la creación y exterminio de perfiles.
+
+    Actúa como controlador aislando el repugnante renderizado de botones dinámicos
+    del modelo de datos subyacente.
+    """
+
+    def __init__(self, gestor_perfiles, **kwargs):
+        """
+        Prepara el panel inyectando la dependencia del gestor de archivos.
+
+        Args:
+            gestor_perfiles (PerfilManager): Motor de persistencia.
+        """
+        super().__init__(**kwargs)
+        self.gestor_perfiles = gestor_perfiles
+
+    def on_pre_enter(self, *args) -> None:
+        """Fuerza la lectura del disco justo antes de mostrar la pantalla."""
+        self.poblar_usuarios()
+
+    def poblar_usuarios(self) -> None:
+        """
+        Barre el directorio de perfiles y escupe un botón de borrado por cada uno.
+        """
+        self.ids.grid_usuarios.clear_widgets()
+        usuarios = self.gestor_perfiles.obtener_lista_usuarios()
+
+        for u in usuarios:
+            caja = BoxLayout(orientation='horizontal', size_hint_y=None, height=dp(50),
+                             spacing=dp(5))
+
+            btn_nombre = Button(
+                text=u,
+                background_color=(0.2, 0.6, 0.8, 1),
+                bold=True,
+                size_hint_x=0.7
+            )
+
+            btn_borrar = Button(
+                text='X',
+                background_color=(0.9, 0.2, 0.2, 1),
+                bold=True,
+                size_hint_x=0.3
+            )
+            btn_borrar.bind(on_release=lambda instance, nombre=u: self.solicitar_borrado(nombre))
+
+            caja.add_widget(btn_nombre)
+            caja.add_widget(btn_borrar)
+            self.ids.grid_usuarios.add_widget(caja)
+
+    def solicitar_borrado(self, nombre_usuario: str) -> None:
+        """Instancia y lanza la ventana modal de confirmación."""
+        PopupBorrarUsuario(nombre_usuario, self, self.gestor_perfiles).open()
+
+    def crear_usuario(self) -> None:
+        """
+        Fuerza la serialización de un nuevo archivo JSON en el directorio.
+        """
+        nombre = self.ids.input_nuevo_nombre.text.strip()
+        texto_elo = self.ids.input_nuevo_elo.text.strip()
+
+        if nombre:
+            try:
+                elo_inicial = int(texto_elo)
+            except ValueError:
+                elo_inicial = 0
+
+            elo_inicial = max(0, elo_inicial)
+
+            nuevo_perfil = self.gestor_perfiles.cargar_perfil(nombre)
+            nuevo_perfil["elo"] = elo_inicial
+            self.gestor_perfiles.guardar_perfil(nuevo_perfil)
+
+            self.ids.input_nuevo_nombre.text = ''
+            self.ids.input_nuevo_elo.text = ''
+            self.poblar_usuarios()
+
+    def volver_menu(self) -> None:
+        """Regresa al menú principal."""
+        App.get_running_app().sm.current = 'menu_principal'
+class PantallaConfiguracion(Screen):
+    """
+    Vista y controlador del panel de preferencias del usuario.
+    """
+
+    def __init__(self, gestor_perfiles, **kwargs):
+        super().__init__(**kwargs)
+        self.gestor_perfiles = gestor_perfiles
+        self.perfil_actual = None
+
+    def on_pre_enter(self, *args) -> None:
+        """Carga el perfil activo justo antes de renderizar la pantalla."""
+        ultimo = self.gestor_perfiles.obtener_ultimo_usuario()
+        if ultimo:
+            self.perfil_actual = self.gestor_perfiles.cargar_perfil(ultimo)
+            self.ids.lbl_usuario.text = str(ultimo)
+        else:
+            self.ids.lbl_usuario.text = "Desconocido"
+
+    def abrir_popup_elo(self) -> None:
+        """Despliega la ventana de edición de ELO."""
+        if self.perfil_actual:
+            PopupCambiarElo(self.perfil_actual, self.gestor_perfiles).open()
+
+    def abrir_popup_registros(self) -> None:
+        """Despliega la ventana de confirmación de borrado."""
+        if self.perfil_actual:
+            PopupBorrarRegistros(self.perfil_actual, self.gestor_perfiles).open()
+
+    def jugar_general(self) -> None:
+        """Inicia el motor de juego en modo estándar."""
+        app = App.get_running_app()
+        if self.perfil_actual:
+            app.iniciar_juego(self.perfil_actual["nombre"])
+
+    def volver_menu(self) -> None:
+        """Retorna a la pantalla principal de la aplicación."""
+        App.get_running_app().sm.current = 'menu_principal'
+
+
+class PantallaMenuPrincipal(Screen):
+    """
+    Vista y controlador del menú principal de la aplicación.
+
+    Implementa el patrón MVC aislando la interfaz gráfica de la
+    lógica de persistencia de perfiles.
+    """
+
+    def __init__(self, gestor_perfiles, **kwargs):
+        """
+        Inicializa la pantalla del menú principal.
+
+        Args:
+            gestor_perfiles (PerfilManager): Instancia del modelo de datos local.
+            **kwargs: Argumentos absorbidos por Kivy.
+        """
+        super().__init__(**kwargs)
+        self.gestor_perfiles = gestor_perfiles
+
+    def on_pre_enter(self, *args):
+        """
+        Intercepta el evento de renderizado de la pantalla.
+
+        Fuerza la actualización del nombre de usuario leyendo el disco duro.
+        """
+        self.cargar_ultimo_usuario()
+
+    def cargar_ultimo_usuario(self):
+        """
+        Interroga al modelo de datos para obtener el último perfil activo.
+        """
+        ultimo = self.gestor_perfiles.obtener_ultimo_usuario()
+
+        if ultimo:
+            self.ids.lbl_usuario.text = f"USUARIO: {ultimo}"
+        else:
+            self.ids.lbl_usuario.text = "USUARIO: Desconocido"
+
+    def abrir_configuracion(self):
+        """
+        Transiciona a la pantalla de preferencias del jugador activo.
+        """
+        App.get_running_app().sm.current = 'configuracion'
+
+    def cambiar_usuario(self):
+        """
+        Transiciona a la vista de selección de perfiles alternativos.
+        """
+        App.get_running_app().sm.current = 'cambiar_usuario'
+
+    def gestionar_usuarios(self):
+        """
+        Transiciona al panel de administración de cuentas.
+        """
+        App.get_running_app().sm.current = 'gestion_usuarios'
+
+
+
 class ChessApp(App):
     """
     Clase principal que inicializa y gestiona el ciclo de vida de la aplicación.
@@ -1124,18 +1091,31 @@ class ChessApp(App):
         self.gestor_ajedrez = ChessManager()
         self.gestor_puzzles = PuzzleManager()
 
-        # Instanciamos el gestor gráfico
         self.sm = ScreenManager()
 
-        pantalla_seleccion = PantallaSeleccion(
+        # Tu gloriosa pantalla principal diseñada a medida
+        pantalla_menu = PantallaMenuPrincipal(
+            gestor_perfiles=self.gestor_perfiles,
+            name='menu_principal'
+        )
+        self.sm.add_widget(pantalla_menu)
+
+        # La pantalla de selección reciclada y purgada
+        pantalla_cambiar = PantallaCambiarUsuario(
             gestor_perfiles=self.gestor_perfiles,
             al_seleccionar=self.iniciar_juego,
-            name='seleccion'
+            name='cambiar_usuario'
         )
-        self.sm.add_widget(pantalla_seleccion)
+        self.sm.add_widget(pantalla_cambiar)
 
         self.pantalla_juego = Screen(name='juego')
         self.sm.add_widget(self.pantalla_juego)
+
+        pantalla_gestion = PantallaGestionUsuarios(
+            gestor_perfiles=self.gestor_perfiles,
+            name='gestion_usuarios'
+        )
+        self.sm.add_widget(pantalla_gestion)
 
         return self.sm
 
@@ -1155,7 +1135,6 @@ class ChessApp(App):
         self.perfil_actual = self.gestor_perfiles.cargar_perfil(nombre_usuario)
         self.gestor_perfiles.guardar_perfil(self.perfil_actual)
 
-        # Buscamos tácticas basándonos en su puntuación e ignorando las que ya completó[cite: 5]
         escala_actual = self.perfil_actual.get("escala_pop", 0)
         pop_min, pop_max = GestorProgresionPop.ESCALAS[escala_actual]
 
@@ -1165,6 +1144,21 @@ class ChessApp(App):
             pop_min=pop_min,
             pop_max=pop_max
         )
+
+        if puzzle:
+            self.gestor_ajedrez.cargar_puzzle(puzzle)
+
+        self.pantalla_juego.clear_widgets()
+
+        vista = VistaTablero(
+            gestor_ajedrez=self.gestor_ajedrez,
+            gestor_puzzles=self.gestor_puzzles,
+            perfil_actual=self.perfil_actual,
+            gestor_perfiles=self.gestor_perfiles
+        )
+        self.pantalla_juego.add_widget(vista)
+
+        self.sm.current = 'juego'
 
         if puzzle:
             # Inyectamos la notación FEN y los movimientos en el motor central[cite: 1]
