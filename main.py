@@ -42,7 +42,7 @@ import os
 # Importación de nuestros robustos módulos lógicos[cite: 3]
 from chess_manager import ChessManager
 from puzzle_manager import PuzzleManager, GestorProgresionPop
-from perfil_manager import PerfilManager, PantallaMenuPrincipal
+from perfil_manager import PerfilManager
 from utilidades import CalculadorElo
 
 
@@ -261,8 +261,8 @@ class VistaTablero(BoxLayout):
             # Limpieza de metadatos de la misión anterior[cite: 3]
             self.ids.lbl_temas.text = ""
             self.ids.btn_siguiente.text = "SIGUIENTE PUZZLE"
-            self.ids.btn_volver.opacity = 0
-            self.ids.btn_volver.disabled = True
+            # self.ids.btn_volver.opacity = 0
+            # self.ids.btn_volver.disabled = True
 
     def actualizar_piezas_visuales(self):
         """
@@ -385,7 +385,7 @@ class VistaTablero(BoxLayout):
                 if info:
                     # Inyectamos el conocimiento traducido en la derrota (¡Respetado!)
                     self.mostrar_temas_traducidos()
-                    self.ids.lbl_info.text = f"Nivel: {info.get('rating')} ELO"
+                    self.ids.lbl_info.text = f"Nivel: {info.get('rating')} ELO | ID: {info.get('id', '--')}"
 
                 self.ids.btn_siguiente.text = "Siguiente Misión"
                 self.ids.btn_volver.opacity = 1
@@ -572,9 +572,13 @@ class VistaTablero(BoxLayout):
 
     def volver_menu(self):
         """
-        Abandona el tablero y retrocede elegantemente al menú de selección de perfiles.
+        Abandona el tablero de juego y retrocede elegantemente al menú principal.
+
+        Corrige el infame error de enrutamiento del ScreenManager de Kivy
+        apuntando directamente a la nueva pantalla raíz de nuestra arquitectura,
+        dejando atrás los fantasmas del código obsoleto.
         """
-        App.get_running_app().sm.current = 'seleccion'
+        App.get_running_app().sm.current = 'menu_principal'
 
     def registrar_resultado_puzzle(self, victoria):
         """
@@ -884,6 +888,15 @@ class PopupBorrarUsuario(Popup):
         self.dismiss()
 
 
+class PopupEnConstruccion(Popup):
+    """
+    Ventana modal genérica para notificar al usuario sobre características futuras.
+
+    Aísla las pulsaciones de botones aún no implementados para evitar que la
+    aplicación colapse o parezca que no responde.
+    """
+    pass
+
 class PantallaGestionUsuarios(Screen):
     """
     Panel de administración para la creación y exterminio de perfiles.
@@ -966,9 +979,14 @@ class PantallaGestionUsuarios(Screen):
     def volver_menu(self) -> None:
         """Regresa al menú principal."""
         App.get_running_app().sm.current = 'menu_principal'
+
+
 class PantallaConfiguracion(Screen):
     """
-    Vista y controlador del panel de preferencias del usuario.
+    Vista y orquestador maestro del panel de preferencias del usuario.
+
+    Implementa el Controlador en la arquitectura MVC, enrutando los comandos
+    hacia los modales emergentes o alterando la máquina de estados de las vistas.
     """
 
     def __init__(self, gestor_perfiles, **kwargs):
@@ -1003,6 +1021,28 @@ class PantallaConfiguracion(Screen):
 
     def volver_menu(self) -> None:
         """Retorna a la pantalla principal de la aplicación."""
+        App.get_running_app().sm.current = 'menu_principal'
+
+    def abrir_temas(self) -> None:
+        """
+        Despliega un aviso temporal (Placeholder) para el futuro selector de temas.
+        """
+        PopupEnConstruccion().open()
+
+    def abrir_escuela(self) -> None:
+        """
+        Despliega un aviso temporal (Placeholder) para el futuro módulo de aprendizaje.
+        """
+        PopupEnConstruccion().open()
+
+    def jugar_general(self) -> None:
+        """Propulsa la aplicación hacia el tablero de juego estándar."""
+        app = App.get_running_app()
+        if self.perfil_actual:
+            app.iniciar_juego(self.perfil_actual["nombre"])
+
+    def volver_menu(self) -> None:
+        """Retrocede bruscamente al menú principal."""
         App.get_running_app().sm.current = 'menu_principal'
 
 
@@ -1062,7 +1102,71 @@ class PantallaMenuPrincipal(Screen):
         """
         App.get_running_app().sm.current = 'gestion_usuarios'
 
-
+# class PantallaMenuPrincipal(Screen):
+#     """
+#     Vista y controlador del menú principal de Mind Chess.
+#
+#     Implementa el patrón MVC actuando como puente entre la interfaz gráfica
+#     y el gestor de perfiles. Proporciona los puntos de anclaje para la
+#     navegación hacia las distintas secciones de gestión de la aplicación.
+#     """
+#
+#     def __init__(self, gestor_perfiles, **kwargs):
+#         """
+#         Inicializa la pantalla del menú principal e inyecta las dependencias.
+#
+#         Args:
+#             gestor_perfiles (PerfilManager): Instancia del modelo de persistencia
+#                                              para acceder a los datos locales.
+#             **kwargs: Argumentos absorbidos implícitamente por Kivy.
+#         """
+#         super().__init__(**kwargs)
+#         self.gestor_perfiles = gestor_perfiles
+#         self.cargar_ultimo_usuario()
+#
+#     def cargar_ultimo_usuario(self) -> None:
+#         """
+#         Interroga al modelo de datos y actualiza la etiqueta visual del jugador.
+#
+#         Asigna 'Desconocido' como medida de seguridad si el archivo JSON
+#         está vacío o el sistema de archivos de Android se pone rebelde.
+#         """
+#         ultimo_usuario = self.gestor_perfiles.obtener_ultimo_usuario()
+#
+#         if ultimo_usuario:
+#             texto_mostrar = f"USUARIO: {ultimo_usuario}"
+#         else:
+#             texto_mostrar = "USUARIO: Desconocido"
+#
+#         self.ids.lbl_usuario.text = texto_mostrar
+#
+#     def on_pre_enter(self, *args) -> None:
+#         """
+#         Intercepta el evento de renderizado justo antes de mostrar la pantalla.
+#
+#         Fuerza la actualización del nombre de usuario en caso de que el jugador
+#         haya cambiado su perfil activo en una pantalla secundaria.
+#         """
+#         self.cargar_ultimo_usuario()
+#
+#     def abrir_configuracion(self) -> None:
+#         """
+#         Despacha el evento para transicionar a la pantalla de configuración.
+#         """
+#         print("Stub: Navegar a Configuración del usuario activo")
+#
+#     def cambiar_usuario(self) -> None:
+#         """
+#         Despacha el evento para transicionar a la selección de perfiles.
+#         """
+#         from kivy.app import App
+#         App.get_running_app().sm.current = 'cambiar_usuario'
+#
+#     def gestionar_usuarios(self) -> None:
+#         """
+#         Despacha el evento para transicionar al panel de administración.
+#         """
+#         print("Stub: Navegar a Gestión de Usuarios")
 
 class ChessApp(App):
     """
@@ -1087,20 +1191,22 @@ class ChessApp(App):
             ScreenManager: El widget raíz que contendrá y gestionará las transiciones
                            entre todas las pantallas de la aplicación.
         """
+        # Inicialización de la capa de Modelos
         self.gestor_perfiles = PerfilManager()
         self.gestor_ajedrez = ChessManager()
         self.gestor_puzzles = PuzzleManager()
 
+        # Inicialización del Controlador Gráfico Maestro
         self.sm = ScreenManager()
 
-        # Tu gloriosa pantalla principal diseñada a medida
+        # 1. Menú Principal (Pantalla de aterrizaje)
         pantalla_menu = PantallaMenuPrincipal(
             gestor_perfiles=self.gestor_perfiles,
             name='menu_principal'
         )
         self.sm.add_widget(pantalla_menu)
 
-        # La pantalla de selección reciclada y purgada
+        # 2. Pantalla de Cambio de Usuario (Sustituye a la antigua selección)
         pantalla_cambiar = PantallaCambiarUsuario(
             gestor_perfiles=self.gestor_perfiles,
             al_seleccionar=self.iniciar_juego,
@@ -1108,14 +1214,26 @@ class ChessApp(App):
         )
         self.sm.add_widget(pantalla_cambiar)
 
-        self.pantalla_juego = Screen(name='juego')
-        self.sm.add_widget(self.pantalla_juego)
-
+        # 3. Pantalla de Gestión (Para crear y fulminar perfiles)
         pantalla_gestion = PantallaGestionUsuarios(
             gestor_perfiles=self.gestor_perfiles,
             name='gestion_usuarios'
         )
         self.sm.add_widget(pantalla_gestion)
+
+        # 4. Pantalla de Configuración del Perfil
+        pantalla_configuracion = PantallaConfiguracion(
+            gestor_perfiles=self.gestor_perfiles,
+            name='configuracion'
+        )
+        self.sm.add_widget(pantalla_configuracion)
+
+        # 5. Contenedor de la Vista del Tablero de Ajedrez
+        self.pantalla_juego = Screen(name='juego')
+        self.sm.add_widget(self.pantalla_juego)
+
+        # Forzamos la entrada inicial al menú principal por si Kivy se despista
+        self.sm.current = 'menu_principal'
 
         return self.sm
 

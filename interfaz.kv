@@ -124,7 +124,7 @@
         #    height: dp(45)
         #    background_color: 0.5, 0.1, 0.8, 1
         #    # Llamamos al nuevo método inyectando el ID del puzzle de tu imagen
-        #    on_press: root.cargar_puzzle_prueba('1qC2F')
+        #    on_press: root.cargar_puzzle_prueba('0GKPM')
         # --------------------------------------------------------------------------------------
 
         Button:
@@ -141,8 +141,6 @@
             size_hint_y: None
             height: dp(45)
             background_color: 0.8, 0.4, 0.1, 1
-            opacity: 0
-            disabled: True
             on_press: root.volver_menu()
 <PopupElo>:
     title_font_size: '20sp'
@@ -425,6 +423,7 @@
             height: dp(55)
             background_color: 0.5, 0.5, 0.5, 1
             bold: True
+            on_release: root.abrir_temas()
 
         Button:
             text: 'ESCUELA'
@@ -432,6 +431,7 @@
             height: dp(55)
             background_color: 0.5, 0.5, 0.5, 1
             bold: True
+            on_release: root.abrir_escuela()
 
         Widget:
             size_hint_y: 0.1
@@ -547,3 +547,18 @@
                 background_color: 0.8, 0.4, 0.1, 1
                 bold: True
                 on_release: root.volver_menu()
+
+<PopupEnConstruccion>:
+    title: 'Módulo en Desarrollo'
+    size_hint: 0.7, 0.3
+    auto_dismiss: True
+    separator_color: 0.8, 0.6, 0.1, 1
+
+    BoxLayout:
+        orientation: 'vertical'
+        padding: dp(20)
+
+        Label:
+            text: 'Sergio está forjando esta característica\\nen las fraguas del código.'
+            halign: 'center'
+            font_size: '16sp'
