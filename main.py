@@ -43,6 +43,26 @@ from puzzle_manager import PuzzleManager, GestorProgresionPop
 from perfil_manager import PerfilManager
 from utilidades import CalculadorElo
 
+
+# Diccionario maestro para purgar el inglés del CSV
+DICCIONARIO_TEMAS = {
+    'mate': 'Mate', 'mateIn1': 'Mate en 1', 'mateIn2': 'Mate en 2',
+    'mateIn3': 'Mate en 3', 'mateIn4': 'Mate en 4', 'mateIn5': 'Mate en 5',
+    'short': 'Corto', 'long': 'Largo', 'veryLong': 'Muy largo',
+    'advantage': 'Ventaja', 'fork': 'Ataque Doble', 'pin': 'Clavada',
+    'skewer': 'Enfilada', 'endgame': 'Final', 'middlegame': 'Medio juego',
+    'opening': 'Apertura', 'defensiveMove': 'Defensa', 'sacrifice': 'Sacrificio',
+    'discoveredAttack': 'Descubierta', 'crushing': 'Aplastante',
+    'kingsideAttack': 'Ataque Rey', 'queensideAttack': 'Ataque Dama',
+    'advancedPawn': 'Peón avanzado', 'passedPawn': 'Peón pasado',
+    'attraction': 'Atracción', 'clearance': 'Despeje', 'deflection': 'Desviación',
+    'zugzwang': 'Zugzwang', 'quietMove': 'Jugada tranquila',
+    'hangingPiece': 'Pieza colgada', 'trappedPiece': 'Pieza atrapada',
+    'xRayAttack': 'Rayos X', 'capturingDefender': 'Captura del defensor',
+    'promotion': 'Coronación', 'interference': 'Interferencia',
+    'doubleCheck': 'Jaque doble', 'enPassant': 'Al paso',
+    'castling': 'Enroque'
+}
 # Fijamos el tamaño de la ventana simulando un dispositivo móvil[cite: 3]
 Window.size = (450, 800)
 
@@ -540,12 +560,12 @@ class VistaTablero(BoxLayout):
         Procesa la lógica central cuando un usuario pulsa una coordenada táctil.
 
         Valida el origen y destino. Si el movimiento pertenece a la solución,
-        lanza la animación de vuelo de la pieza y programa la respuesta enemiga[cite: 3].
-        Si es un error, reproduce un sonido vergonzoso, dibuja la flecha roja
-        y muestra la penalización simulada[cite: 3].
+        lanza la animación de vuelo de la pieza y programa la respuesta enemiga.
+        Si es un error, reproduce un sonido vergonzoso, dibuja la flecha roja,
+        muestra la penalización simulada y desvela los temas del puzle.
 
         Args:
-            nombre_casilla (str): Casilla en notación algebraica (ej. 'c3')[cite: 3].
+            nombre_casilla (str): Casilla en notación algebraica (ej. 'c3').
         """
         gestor = self.gestor_ajedrez
 
@@ -562,7 +582,6 @@ class VistaTablero(BoxLayout):
                 if self.sonido_mover: self.sonido_mover.play()
 
                 self.actualizar_piezas_visuales()
-                # Ocultamos la textura en la casilla destino original para evitar clonaciones visuales durante el vuelo[cite: 3]
                 self.diccionario_casillas[nombre_casilla].ruta_pieza = ''
 
                 def terminar_vuelo():
@@ -572,7 +591,10 @@ class VistaTablero(BoxLayout):
                         if self.sonido_ganar: self.sonido_ganar.play()
                         variacion, nuevo_elo = self.registrar_resultado_puzzle(True)
                         self.ids.lbl_estado.text = f"¡CORRECTO!, nuevo ELO = {nuevo_elo} (+{variacion})"
-                        self.ids.lbl_estado.color = [0, 1, 0, 1]  # Verde esperanza
+                        self.ids.lbl_estado.color = [0, 1, 0, 1]
+
+                        # Inyectamos el conocimiento traducido al saborear la victoria
+                        self.mostrar_temas_traducidos()
 
                         self.ids.btn_volver.opacity = 1
                         self.ids.btn_volver.disabled = False
@@ -586,10 +608,9 @@ class VistaTablero(BoxLayout):
                 self.actualizar_piezas_visuales()
                 if self.sonido_perder: self.sonido_perder.play()
 
-                # Inyectamos el castigo implacable sin decimales
                 variacion, nuevo_elo = self.registrar_resultado_puzzle(False)
                 self.ids.lbl_estado.text = f"¡INCORRECTO! nuevo ELO = {nuevo_elo} ({variacion})"
-                self.ids.lbl_estado.color = [1, 0.4, 0.4, 1]  # Rojo sangre
+                self.ids.lbl_estado.color = [1, 0.4, 0.4, 1]
 
                 mov_erroneo = gestor.movimiento_fallado
                 if mov_erroneo:
@@ -597,15 +618,14 @@ class VistaTablero(BoxLayout):
 
                 info = gestor.info_puzzle
                 if info:
-                    temas = info.get('themes', '').replace(' ', ' • ')
-                    self.ids.lbl_temas.text = temas
+                    # Reutilizamos el método limpio para el fracaso
+                    self.mostrar_temas_traducidos()
                     self.ids.lbl_info.text = f"Nivel: {info.get('rating')} ELO"
 
                 self.ids.btn_siguiente.text = "Siguiente Misión"
                 self.ids.btn_volver.opacity = 1
                 self.ids.btn_volver.disabled = False
         else:
-            # Si tocamos por primera vez, seleccionamos e iluminamos las rutas[cite: 3]
             gestor.seleccionar_casilla(nombre_casilla)
             self.iluminar_casillas()
             if gestor.casilla_seleccionada and self.sonido_seleccionar:
@@ -631,11 +651,12 @@ class VistaTablero(BoxLayout):
         Ejecuta el paso de la táctica correspondiente a la máquina enemiga.
 
         Programa la animación fantasma del rival para crear la ilusión óptica
-        de movimiento antes de pintar la textura real en la matriz[cite: 3].
+        de movimiento antes de pintar la textura real en la matriz. Si el puzle
+        concluye victoriosamente tras el forzado movimiento de la IA, revela los temas.
 
         Args:
             dt (float): Tiempo delta inyectado por el sagrado pero temperamental
-                        Clock.schedule de Kivy[cite: 3].
+                        Clock.schedule de Kivy.
         """
         mov = self.gestor_ajedrez.ejecutar_movimiento_enemigo()
         if mov:
@@ -657,6 +678,9 @@ class VistaTablero(BoxLayout):
                     self.ids.lbl_estado.text = f"¡CORRECTO! Elo sube +{variacion}, nuevo ELO = {nuevo_elo}"
                     self.ids.lbl_estado.color = [0, 1, 0, 1]
 
+                    # Desplegamos los temas si la táctica finaliza con el enemigo
+                    self.mostrar_temas_traducidos()
+
                     self.ids.btn_volver.opacity = 1
                     self.ids.btn_volver.disabled = False
                 else:
@@ -666,13 +690,16 @@ class VistaTablero(BoxLayout):
             self.animar_pieza(origen, destino, simbolo, terminar_animacion_ia)
 
     def finalizar_turno_ia(self):
-        """Alternativa bloqueante para restaurar las piezas (sin animación fantasma)[cite: 3]."""
+        """Alternativa bloqueante para restaurar las piezas (sin animación fantasma)."""
         self.actualizar_piezas_visuales()
         if self.sonido_mover: self.sonido_mover.play()
 
         if self.gestor_ajedrez.estado_puzzle == "VICTORIA":
             self.ids.lbl_estado.text = "¡PUZZLE COMPLETADO!"
             self.ids.lbl_estado.color = [0, 1, 0, 1]
+
+            # Inyección de temas
+            self.mostrar_temas_traducidos()
         else:
             self.ids.lbl_estado.text = "¡Tu turno! Continúa."
             self.ids.lbl_estado.color = [0.9, 0.9, 0.9, 1]
@@ -842,6 +869,33 @@ class VistaTablero(BoxLayout):
         self.gestor_perfiles.guardar_perfil(self.perfil_actual)
 
         return variacion_entera, nuevo_elo
+
+    def mostrar_temas_puzzle(self):
+        """
+        Extrae y renderiza los temas tácticos del puzle activo en la interfaz.
+
+        Formatea la ruda cadena de texto separada por espacios que escupe
+        la deficiente base de datos CSV en una elegante lista separada por puntos,
+        lista para ser consumida por la vista de Kivy.
+        """
+        info = self.gestor_ajedrez.info_puzzle
+        if info:
+            temas = info.get('themes', '').replace(' ', ' • ')
+            self.ids.lbl_temas.text = temas
+
+    def mostrar_temas_traducidos(self):
+        """
+        Extrae los pestilentes temas en inglés del puzle activo.
+
+        Los traduce usando el diccionario superior y los inyecta en la vista.
+        Si un tema no existe en el mapeo, lo capitaliza por defecto.
+        """
+        info = self.gestor_ajedrez.info_puzzle
+        if info:
+            temas_crudos = info.get('themes', '').split()
+            temas_limpios = [DICCIONARIO_TEMAS.get(t, t.capitalize()) for t in temas_crudos]
+            self.ids.lbl_temas.text = ' • '.join(temas_limpios)
+
 
 class PopupElo(Popup):
     """
