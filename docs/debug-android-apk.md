@@ -84,3 +84,13 @@ Si continúa apareciendo como:`unauthorized` puede reiniciarse el servidor ADB:
 A continuación, vuelve a comprobar la pantalla del teléfono para aceptar la solicitud de autorización.
 
 Si el dispositivo no aparece en absoluto, el problema probablemente no está relacionado con la autorización RSA, sino con la conexión USB, el modo USB seleccionado, los controladores de Windows o el propio cable.
+
+## Debugging
+
+En la consola PowerShell navegar a la ubicacion de los archivos del SDK y ejecutar:
+```
+cd C:\platform-tools
+.\adb logcat | Select-String "python"
+```
+
+Powershell devolverá lo volcado por el móvil a través del cable USB
