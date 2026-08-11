@@ -66,8 +66,8 @@ DICCIONARIO_TEMAS = {
     'doubleCheck': 'Jaque doble', 'enPassant': 'Al paso',
     'castling': 'Enroque'
 }
-# Fijamos el tamaño de la ventana simulando un dispositivo móvil[cite: 3]
-Window.size = (450, 800)
+if platform != 'android' and platform != 'ios':
+    Window.size = (450, 800)
 
 # Diseño KV purgado y estructurado sin errores de indentación en el parser[cite: 3]
 Builder.load_file('interfaz.kv')
