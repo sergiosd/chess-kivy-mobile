@@ -34,6 +34,7 @@ from kivy.properties import BooleanProperty, StringProperty, ListProperty
 from kivy.animation import Animation
 from kivy.graphics import Color, Line, Triangle
 from kivy.metrics import dp
+from kivy.utils import platform
 import chess
 import math
 from typing import Callable
@@ -1191,6 +1192,16 @@ class ChessApp(App):
             ScreenManager: El widget raíz que contendrá y gestionará las transiciones
                            entre todas las pantallas de la aplicación.
         """
+
+        # Doblegamos la voluntad de Android justo antes de arrancar la interfaz gráfica
+        if platform == 'android':
+            from android.permissions import request_permissions, Permission
+            request_permissions([
+                Permission.INTERNET,
+                Permission.READ_EXTERNAL_STORAGE,
+                Permission.WRITE_EXTERNAL_STORAGE
+            ])
+
         # Inicialización de la capa de Modelos
         self.gestor_perfiles = PerfilManager()
         self.gestor_ajedrez = ChessManager()
@@ -1296,6 +1307,20 @@ class ChessApp(App):
         # Ordenamos a la traicionera máquina de estados de Kivy que cambie de pantalla
         self.sm.current = 'juego'
 
+    # def solicitar_permisos_android() -> None:
+    #     """
+    #     Extorsiona al miserable sistema operativo Android para obtener acceso al disco.
+    #
+    #     Verifica si la plataforma de ejecución es el entorno móvil y lanza
+    #     la petición de permisos de almacenamiento en tiempo de ejecución.
+    #     """
+    # 
+    #     if platform == 'android':
+    #         from android.permissions import request_permissions, Permission
+    #         request_permissions([
+    #             Permission.READ_EXTERNAL_STORAGE,
+    #             Permission.WRITE_EXTERNAL_STORAGE
+    #         ])
 
 if __name__ == '__main__':
     ChessApp().run()
