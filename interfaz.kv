@@ -65,10 +65,14 @@
     Label:
         id: lbl_mision
         text: 'Puzzle ELO: --'
-        font_size: '28sp'
+        font_size: '20sp'  # ¡Reducido de 28sp para mortales!
         bold: True
         size_hint_y: 0.15
         color: 0.1, 0.8, 0.8, 1
+        # Forzamos los límites de la caja de texto
+        text_size: self.size
+        halign: 'center'
+        valign: 'middle'
 
     AnchorLayout:
         size_hint_y: 0.55
@@ -91,6 +95,7 @@
                 height: self.width
 
     BoxLayout:
+        BoxLayout:
         id: panel_inferior
         orientation: 'vertical'
         size_hint_y: 0.35
@@ -99,17 +104,24 @@
         Label:
             id: lbl_estado
             text: 'Esperando despliegue...'
-            font_size: '22sp'
+            font_size: '18sp'  # Drástica reducción desde 22sp
             bold: True
             markup: True
             color: 0.9, 0.9, 0.9, 1
+            # Magia negra para forzar el salto de línea si es necesario
+            text_size: self.size
+            halign: 'center'
+            valign: 'middle'
 
         Label:
             id: lbl_info
             text: 'Nivel: --'
-            font_size: '18sp'
+            font_size: '16sp'
             color: 0, 0.8, 0.7, 1
             bold: True
+            text_size: self.size
+            halign: 'center'
+            valign: 'middle'
 
         Label:
             id: lbl_temas
