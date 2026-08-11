@@ -14,8 +14,9 @@ Haz clic en el botón de Inicio de Windows. Escribe "PowerShell". Haz clic derec
 
 ### 2.Ejecutar el comando principal
 Copia y pega este comando en la ventana azul que acaba de aparecer:
-
-```wsl --install```
+```
+wsl --install
+```
 
 Pulsa Enter. Esta instrucción descarga el núcleo de Linux. Instalará la distribución Ubuntu por defecto. Tardará unos minutos dependiendo de tu conexión a internet.
 
@@ -25,3 +26,28 @@ La consola mostrará un mensaje indicando que la operación se ha completado con
 ### 4. Crear las credenciales de Linux
 Tras el reinicio aparecerá una terminal negra de Ubuntu de forma automática. Si no salta sola, busca "Ubuntu" en el menú de Inicio y ábrelo. Te pedirá que escribas un nombre de usuario nuevo. A continuación deberás escribir una contraseña. Los caracteres no se verán en la pantalla mientras tecleas. Pulsa Enter al terminar.
 
+### 5. Actualizar y mejorar paquetes
+Se recomienda actualizar regularmente los paquetes utilizando el administrador de paquetes preferido para la distribución. Para Ubuntu o Debian, use el comando:
+```
+sudo apt update && sudo apt upgrade
+```
+
+### 6. Almacenamiento de archivos
+Para abrir su proyecto de WSL en el Explorador de archivos de Windows, escriba:
+
+```
+explorer.exe .
+```
+
+*Asegúrese de agregar el punto al final del comando para abrir el directorio actual.*
+
+### 7. Versión de WSL
+Para conocer la versión de WSL, ejecutar el comando:
+```
+wsl --list --verbose
+```
+
+Idealmente se deberia trabajar con la versión 2 o superior, si se reporta versión 1, ejecutar:
+```
+wsl --set-version Ubuntu 2
+```
