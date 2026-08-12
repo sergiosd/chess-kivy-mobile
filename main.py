@@ -30,6 +30,7 @@ from kivy.uix.image import Image
 from kivy.core.window import Window
 from kivy.clock import Clock
 from kivy.core.audio import SoundLoader
+from kivy.core.text import LabelBase, DEFAULT_FONT
 from kivy.properties import BooleanProperty, StringProperty, ListProperty
 from kivy.animation import Animation
 from kivy.graphics import Color, Line, Triangle
@@ -57,12 +58,12 @@ DICCIONARIO_TEMAS = {
     'opening': 'Apertura', 'defensiveMove': 'Defensa', 'sacrifice': 'Sacrificio',
     'discoveredAttack': 'Descubierta', 'crushing': 'Aplastante',
     'kingsideAttack': 'Ataque Rey', 'queensideAttack': 'Ataque Dama',
-    'advancedPawn': 'Peón avanzado', 'passedPawn': 'Peón pasado',
-    'attraction': 'Atracción', 'clearance': 'Despeje', 'deflection': 'Desviación',
+    'advancedPawn': 'Peon avanzado', 'passedPawn': 'Peon pasado',
+    'attraction': 'Atraccion', 'clearance': 'Despeje', 'deflection': 'Desviacion',
     'zugzwang': 'Zugzwang', 'quietMove': 'Jugada tranquila',
     'hangingPiece': 'Pieza colgada', 'trappedPiece': 'Pieza atrapada',
     'xRayAttack': 'Rayos X', 'capturingDefender': 'Captura del defensor',
-    'promotion': 'Coronación', 'interference': 'Interferencia',
+    'promotion': 'Coronacion', 'interference': 'Interferencia',
     'doubleCheck': 'Jaque doble', 'enPassant': 'Al paso',
     'castling': 'Enroque'
 }
@@ -388,7 +389,7 @@ class VistaTablero(BoxLayout):
                     self.mostrar_temas_traducidos()
                     self.ids.lbl_info.text = f"Nivel: {info.get('rating')} ELO | ID: {info.get('id', '--')}"
 
-                self.ids.btn_siguiente.text = "Siguiente Misión"
+                self.ids.btn_siguiente.text = "Siguiente Puzzle"
                 self.ids.btn_volver.opacity = 1
                 self.ids.btn_volver.disabled = False
         else:
@@ -1046,6 +1047,50 @@ class PantallaConfiguracion(Screen):
         """Retrocede bruscamente al menú principal."""
         App.get_running_app().sm.current = 'menu_principal'
 
+class PantallaPractica(Screen):
+    """
+    Vista y orquestador maestro del panel de práctica.
+
+    Implementa el Controlador en la arquitectura MVC, enrutando los comandos
+    hacia los modales emergentes o alterando la máquina de estados de las vistas.
+    """
+
+    def __init__(self, gestor_perfiles, **kwargs):
+        super().__init__(**kwargs)
+        self.gestor_perfiles = gestor_perfiles
+        self.perfil_actual = None
+
+    def on_pre_enter(self, *args) -> None:
+        """Carga el perfil activo justo antes de renderizar la pantalla."""
+        ultimo = self.gestor_perfiles.obtener_ultimo_usuario()
+        if ultimo:
+            self.perfil_actual = self.gestor_perfiles.cargar_perfil(ultimo)
+            self.ids.lbl_usuario.text = str(ultimo)
+        else:
+            self.ids.lbl_usuario.text = "Desconocido"
+
+    def jugar_general(self) -> None:
+        """Inicia el motor de juego en modo estándar."""
+        app = App.get_running_app()
+        if self.perfil_actual:
+            app.iniciar_juego(self.perfil_actual["nombre"])
+
+    def volver_menu(self) -> None:
+        """Retorna a la pantalla principal de la aplicación."""
+        App.get_running_app().sm.current = 'menu_principal'
+
+    def abrir_temas(self) -> None:
+        """
+        Despliega un aviso temporal (Placeholder) para el futuro selector de temas.
+        """
+        PopupEnConstruccion().open()
+
+    def abrir_escuela(self) -> None:
+        """
+        Despliega un aviso temporal (Placeholder) para el futuro módulo de aprendizaje.
+        """
+        PopupEnConstruccion().open()
+
 
 class PantallaMenuPrincipal(Screen):
     """
@@ -1103,6 +1148,28 @@ class PantallaMenuPrincipal(Screen):
         """
         App.get_running_app().sm.current = 'gestion_usuarios'
 
+    def abrir_practica(self):
+        """
+        Transiciona a la pantalla de preferencias del jugador activo.
+        """
+        App.get_running_app().sm.current = 'practica'
+
+
+def inyectar_tipografia_personalizada() -> None:
+    """
+    Sobrescribe la aburrida fuente Roboto que Kivy utiliza por defecto.
+
+    Obliga al motor de renderizado de texto a utilizar un archivo TrueType Font (.ttf)
+    personalizado en todos los componentes de la interfaz (Labels, Buttons, TextInputs)
+    de forma global, preservando la limpieza del archivo .kv.
+    """
+    # Define la ruta exacta donde has guardado tu obra de arte tipográfica
+    ruta_fuente = 'assets/fonts/BD_Cartoon_Shout.ttf'
+
+    # Secuestramos el núcleo tipográfico de Kivy
+    LabelBase.register(DEFAULT_FONT, ruta_fuente)
+
+inyectar_tipografia_personalizada()
 # class PantallaMenuPrincipal(Screen):
 #     """
 #     Vista y controlador del menú principal de Mind Chess.
@@ -1242,6 +1309,13 @@ class ChessApp(App):
         # 5. Contenedor de la Vista del Tablero de Ajedrez
         self.pantalla_juego = Screen(name='juego')
         self.sm.add_widget(self.pantalla_juego)
+
+        # 6. Pantalla de Practica
+        pantalla_practica = PantallaPractica(
+            gestor_perfiles=self.gestor_perfiles,
+            name='practica'
+        )
+        self.sm.add_widget(pantalla_practica)
 
         # Forzamos la entrada inicial al menú principal por si Kivy se despista
         self.sm.current = 'menu_principal'

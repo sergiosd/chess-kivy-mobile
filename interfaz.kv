@@ -125,8 +125,12 @@
         Label:
             id: lbl_temas
             text: ''
-            font_size: '14sp'
+            font_size: '10sp'
             color: 0.6, 0.6, 0.6, 1
+            # Obligamos al texto a encajarse en el ancho del widget
+            text_size: self.size
+            halign: 'center'
+            valign: 'middle'
         # --- BOTÓN DE DEPURACIÓN INYECTADO ----------------------------------------------------
         # Button:
         #    id: btn_test_popup
@@ -142,16 +146,22 @@
             id: btn_siguiente
             text: 'SIGUIENTE PUZZLE'
             size_hint_y: None
-            height: dp(45)
-            background_color: 0, 0.7, 0.5, 1
+            height: dp(60)
+            background_color: 1, 1, 1, 1
+            background_normal: 'assets/ui/button.png'
+            background_down: 'assets/ui/button_down.png'
+            border: 0, 0, 0, 0
             on_press: root.cargar_siguiente_puzzle()
 
         Button:
             id: btn_volver
-            text: 'VOLVER AL MENÚ'
+            text: 'VOLVER AL MENU'
             size_hint_y: None
             height: dp(45)
             background_color: 0.8, 0.4, 0.1, 1
+            background_normal: 'assets/ui/button.png'
+            background_down: 'assets/ui/button_down.png'
+            border: 0, 0, 0, 0
             on_press: root.volver_menu()
 <PopupElo>:
     title_font_size: '20sp'
@@ -177,6 +187,9 @@
             size_hint_y: None
             height: dp(50)
             background_color: root.color_tema
+            background_normal: 'assets/ui/button.png'
+            background_down: 'assets/ui/button_down.png'
+            border: 0, 0, 0, 0
             bold: True
             on_release: root.dismiss()
 
@@ -187,10 +200,11 @@
         spacing: dp(15)
         canvas.before:
             Color:
-                rgba: 0.12, 0.29, 0.42, 1
+                rgba: 1, 1, 1, 1
             Rectangle:
                 pos: self.pos
                 size: self.size
+                source: 'assets/ui/bg_2.png'
 
         Label:
             text: '[b]SELECCIONA OTRO PERFIL[/b]'
@@ -208,14 +222,39 @@
                 spacing: dp(10)
                 size_hint_y: None
                 height: self.minimum_height
+        BoxLayout:
+            orientation: 'vertical'
+            # Comprimimos el panel para que no ocupe todo el ancho de la pantalla
+            size_hint_x: 0.6
+            pos_hint: {'center_x': 0.5} # Lo forzamos al centro absoluto
 
-        Button:
-            text: 'VOLVER AL MENÚ'
+            # Ajuste dinámico de altura: el panel abrazará su contenido
             size_hint_y: None
-            height: dp(60)
-            background_color: 0.8, 0.4, 0.1, 1
-            bold: True
-            on_release: root.volver()
+            height: self.minimum_height
+
+            # Espaciado interno (padding) y separación entre botones (spacing)
+            padding: dp(25)
+            spacing: dp(15)
+
+            # Pintamos el panel subyugando el lienzo (canvas)
+            canvas.before:
+                Color:
+                    # Un azul más oscuro y translúcido para contrastar con el fondo
+                    rgba: 0.05, 0.15, 0.25, 0.3
+                RoundedRectangle:
+                    pos: self.pos
+                    size: self.size
+                    radius: [dp(15)] # Curvatura de las esquinas (¡Magia pura!)
+            Button:
+                text: 'VOLVER AL MENU'
+                size_hint_y: None
+                height: dp(60)
+                background_color: 0.8, 0.4, 0.1, 1
+                background_normal: 'assets/ui/button.png'
+                background_down: 'assets/ui/button_down.png'
+                border: 0, 0, 0, 0
+                bold: True
+                on_release: root.volver()
 <PopupCoronacion>:
     title: '¡Coronación! Elige tu pieza'
     title_font_size: '20sp'
@@ -249,58 +288,150 @@
         canvas.before:
             Color:
                 # Mantenemos ese azul corporativo elegante de fondo
-                rgba: 0.12, 0.29, 0.42, 1
+                # rgba: 0.12, 0.29, 0.42, 1
+                rgba: 1, 1, 1, 1
             Rectangle:
                 pos: self.pos
                 size: self.size
+                # Asegúrate de poner tu imagen de fondo en la carpeta assets.
+                source: 'assets/ui/bg_1.png'
 
-        Label:
-            text: '[b]MIND CHESS[/b]'
-            markup: True
-            halign: 'center'
-            font_size: '42sp'
-            color: 0.1, 0.8, 0.8, 1
-            size_hint_y: 0.25
+        # Label:
+        #    text: '[b]MIND CHESS[/b]'
+        #    markup: True
+        #    halign: 'center'
+        #    font_size: '42sp'
+        #    color: 0.1, 0.8, 0.8, 1
+        #    size_hint_y: 0.25
 
-        Label:
-            id: lbl_usuario
-            text: 'USUARIO: '
-            font_size: '28sp'
-            color: 1, 1, 1, 1
-            bold: True
-            size_hint_y: 0.15
+        BoxLayout:
+            orientation: 'vertical'
+            # Comprimimos el panel para que no ocupe todo el ancho de la pantalla
+            size_hint_x: 0.95
+            pos_hint: {'center_x': 0.5} # Lo forzamos al centro absoluto
 
-        Button:
-            text: 'CONFIGURACIÓN'
+            # Ajuste dinámico de altura: el panel abrazará su contenido
             size_hint_y: None
-            height: dp(60)
-            background_color: 0.2, 0.6, 0.8, 1
-            bold: True
-            on_release: root.abrir_configuracion()
+            height: dp(150)
 
-        Button:
-            text: 'CAMBIAR USUARIO'
-            size_hint_y: None
-            height: dp(60)
-            background_color: 0.2, 0.8, 0.4, 1
-            bold: True
-            on_release: root.cambiar_usuario()
+            # Espaciado interno (padding) y separación entre labels (spacing)
+            padding: dp(25)
+            spacing: dp(15)
 
-        Button:
-            text: 'GESTIÓN DE USUARIOS'
-            size_hint_y: None
-            height: dp(60)
-            background_color: 0.8, 0.6, 0.1, 1
-            bold: True
-            on_release: root.gestionar_usuarios()
+            # Pintamos el panel subyugando el lienzo (canvas)
+            canvas.before:
+                Color:
+                    # Un azul más oscuro y translúcido para contrastar con el fondo
+                    rgba: 0.05, 0.15, 0.25, 0.3
+                RoundedRectangle:
+                    pos: self.pos
+                    size: self.size
+                    radius: [dp(15)] # Curvatura de las esquinas (¡Magia pura!)
 
-        Button:
-            text: 'SALIR DEL JUEGO'
+            # Inyectamos el lable dentro de esta nueva jaula
+            Label:
+                text: '[b]MIND CHESS[/b]'
+                markup: True
+                halign: 'center'
+                font_size: '42sp'
+                color: 0.1, 0.8, 0.8, 1
+                size_hint_y: 0.25
+            Label:
+                id: lbl_usuario
+                text: 'USUARIO: '
+                font_size: '28sp'
+                color: 1, 1, 1, 1
+                bold: True
+                size_hint_y: 0.15
+
+        BoxLayout:
+            orientation: 'vertical'
+            # Comprimimos el panel para que no ocupe todo el ancho de la pantalla
+            size_hint_x: 0.8
+            pos_hint: {'center_x': 0.5} # Lo forzamos al centro absoluto
+
+            # Ajuste dinámico de altura: el panel abrazará su contenido
             size_hint_y: None
-            height: dp(60)
-            background_color: 0.8, 0.2, 0.2, 1
-            bold: True
-            on_release: app.stop()
+            height: self.minimum_height
+
+            # Espaciado interno (padding) y separación entre botones (spacing)
+            padding: dp(25)
+            spacing: dp(15)
+
+            # Pintamos el panel subyugando el lienzo (canvas)
+            canvas.before:
+                Color:
+                    # Un azul más oscuro y translúcido para contrastar con el fondo
+                    rgba: 0.05, 0.15, 0.25, 0.3
+                RoundedRectangle:
+                    pos: self.pos
+                    size: self.size
+                    radius: [dp(15)] # Curvatura de las esquinas (¡Magia pura!)
+
+            # Inyectamos los botones dentro de esta nueva jaula
+            Button:
+                text: 'CONFIGURACION'
+                size_hint_y: None
+                height: dp(60)
+                background_color: 0.2, 0.6, 0.8, 1
+                background_normal: 'assets/ui/button.png'
+                background_down: 'assets/ui/button_down.png'
+                border: 0, 0, 0, 0
+                bold: True
+                on_release: root.abrir_configuracion()
+
+            Button:
+                text: 'CAMBIAR USUARIO'
+                size_hint_y: None
+                height: dp(60)
+                # size_hint_x: None # fuerza tamaño horizontal fijo del boton
+                # width: dp(220) # tamño horizontal del boton
+                pos_hint: {'center_x': 0.5}
+                background_color: 1, 1, 1, 1 # Purgado de tintes
+                background_normal: 'assets/ui/button_small.png'
+                background_down: 'assets/ui/button_small_down.png'
+                border: 0, 0, 0, 0
+                bold: True
+                on_release: root.cambiar_usuario()
+
+            Button:
+                text: 'GESTION DE USUARIOS'
+                size_hint_y: None
+                height: dp(60)
+                background_color: 0.8, 0.6, 0.1, 1
+                background_normal: 'assets/ui/button.png'
+                background_down: 'assets/ui/button_down.png'
+                border: 0, 0, 0, 0
+                bold: True
+                on_release: root.gestionar_usuarios()
+
+            Button:
+                text: 'PRACTICAR'
+                size_hint_y: None
+                height: dp(60)
+                background_color: 0.8, 0.6, 0.8, 1
+                background_normal: 'assets/ui/button.png'
+                background_down: 'assets/ui/button_down.png'
+                border: 0, 0, 0, 0
+                bold: True
+                on_release: root.abrir_practica()
+            Widget:
+                size_hint_y: None
+                height: dp(20)
+            Button:
+                text: 'SALIR DEL JUEGO'
+                size_hint_y: None
+                height: dp(60)
+                background_color: 0.8, 0.2, 0.2, 1
+                background_normal: 'assets/ui/button.png'
+                background_down: 'assets/ui/button_down.png'
+                border: 0, 0, 0, 0
+                bold: True
+                on_release: app.stop()
+
+        # Un pequeño resorte invisible para empujar todo hacia arriba si es necesario
+        Widget:
+            size_hint_y: 0.05
 <PopupCambiarElo>:
     title: 'Modificar ELO'
     size_hint: 0.8, 0.4
@@ -331,11 +462,17 @@
             Button:
                 text: 'Cancelar'
                 background_color: 0.5, 0.5, 0.5, 1
+                background_normal: 'assets/ui/button.png'
+                background_down: 'assets/ui/button_down.png'
+                border: 0, 0, 0, 0
                 on_release: root.dismiss()
 
             Button:
                 text: 'Guardar'
                 background_color: 0.2, 0.8, 0.4, 1
+                background_normal: 'assets/ui/button.png'
+                background_down: 'assets/ui/button_down.png'
+                border: 0, 0, 0, 0
                 bold: True
                 on_release: root.guardar_cambios()
 
@@ -369,11 +506,17 @@
             Button:
                 text: 'Cancelar'
                 background_color: 0.5, 0.5, 0.5, 1
+                background_normal: 'assets/ui/button.png'
+                background_down: 'assets/ui/button_down.png'
+                border: 0, 0, 0, 0
                 on_release: root.dismiss()
 
             Button:
                 text: 'ELIMINAR'
                 background_color: 0.8, 0.2, 0.2, 1
+                background_normal: 'assets/ui/button.png'
+                background_down: 'assets/ui/button_down.png'
+                border: 0, 0, 0, 0
                 bold: True
                 on_release: root.confirmar_borrado()
 
@@ -384,76 +527,214 @@
         spacing: dp(15)
         canvas.before:
             Color:
-                rgba: 0.12, 0.29, 0.42, 1
+                rgba: 1, 1, 1, 1
             Rectangle:
                 pos: self.pos
                 size: self.size
+                source: 'assets/ui/bg_3.png'
+        BoxLayout:
+            orientation: 'vertical'
+            # Comprimimos el panel para que no ocupe todo el ancho de la pantalla
+            size_hint_x: 0.95
+            pos_hint: {'center_x': 0.5} # Lo forzamos al centro absoluto
 
-        Label:
-            id: lbl_usuario
-            text: 'Usuario'
-            font_size: '34sp'
-            bold: True
-            size_hint_y: 0.15
-            color: 1, 1, 1, 1
-
-        Button:
-            text: 'CAMBIAR ELO'
+            # Ajuste dinámico de altura: el panel abrazará su contenido
             size_hint_y: None
-            height: dp(55)
-            background_color: 0.2, 0.6, 0.8, 1
-            bold: True
-            on_release: root.abrir_popup_elo()
+            height: dp(100)
 
-        Button:
-            text: 'BORRAR REGISTROS'
+            # Espaciado interno (padding) y separación entre labels (spacing)
+            padding: dp(25)
+            spacing: dp(15)
+
+            # Pintamos el panel subyugando el lienzo (canvas)
+            canvas.before:
+                Color:
+                    # Un azul más oscuro y translúcido para contrastar con el fondo
+                    rgba: 0.05, 0.15, 0.25, 0.3
+                RoundedRectangle:
+                    pos: self.pos
+                    size: self.size
+                    radius: [dp(15)] # Curvatura de las esquinas (¡Magia pura!)
+            Label:
+                id: lbl_usuario
+                text: 'Usuario'
+                font_size: '34sp'
+                bold: True
+                size_hint_y: 0.15
+                color: 1, 1, 1, 1
+        BoxLayout:
+            orientation: 'vertical'
+            # Comprimimos el panel para que no ocupe todo el ancho de la pantalla
+            size_hint_x: 0.8
+            pos_hint: {'center_x': 0.5} # Lo forzamos al centro absoluto
+
+            # Ajuste dinámico de altura: el panel abrazará su contenido
             size_hint_y: None
-            height: dp(55)
-            background_color: 0.8, 0.2, 0.2, 1
-            bold: True
-            on_release: root.abrir_popup_registros()
+            height: self.minimum_height
 
-        Label:
-            text: 'JUGAR'
-            font_size: '28sp'
-            bold: True
-            size_hint_y: 0.1
-            color: 0.1, 0.8, 0.8, 1
+            # Espaciado interno (padding) y separación entre botones (spacing)
+            padding: dp(25)
+            spacing: dp(15)
 
-        Button:
-            text: 'GENERAL'
-            size_hint_y: None
-            height: dp(55)
-            background_color: 0.2, 0.8, 0.4, 1
-            bold: True
-            on_release: root.jugar_general()
+            # Pintamos el panel subyugando el lienzo (canvas)
+            canvas.before:
+                Color:
+                    # Un azul más oscuro y translúcido para contrastar con el fondo
+                    rgba: 0.05, 0.15, 0.25, 0.3
+                RoundedRectangle:
+                    pos: self.pos
+                    size: self.size
+                    radius: [dp(15)] # Curvatura de las esquinas (¡Magia pura!)
+            Button:
+                text: 'CAMBIAR ELO'
+                size_hint_y: None
+                height: dp(55)
+                background_color: 0.2, 0.6, 0.8, 1
+                background_normal: 'assets/ui/button.png'
+                background_down: 'assets/ui/button_down.png'
+                border: 0, 0, 0, 0
+                bold: True
+                on_release: root.abrir_popup_elo()
 
-        Button:
-            text: 'TEMAS'
-            size_hint_y: None
-            height: dp(55)
-            background_color: 0.5, 0.5, 0.5, 1
-            bold: True
-            on_release: root.abrir_temas()
+            Button:
+                text: 'BORRAR REGISTROS'
+                size_hint_y: None
+                height: dp(55)
+                background_color: 0.8, 0.2, 0.2, 1
+                background_normal: 'assets/ui/button.png'
+                background_down: 'assets/ui/button_down.png'
+                border: 0, 0, 0, 0
+                bold: True
+                on_release: root.abrir_popup_registros()
 
-        Button:
-            text: 'ESCUELA'
-            size_hint_y: None
-            height: dp(55)
-            background_color: 0.5, 0.5, 0.5, 1
-            bold: True
-            on_release: root.abrir_escuela()
 
+            Widget:
+                size_hint_y: None
+                height: dp(20)
+
+            Button:
+                text: 'VOLVER AL MENU'
+                size_hint_y: None
+                height: dp(55)
+                background_color: 0.8, 0.6, 0.1, 1
+                background_normal: 'assets/ui/button.png'
+                background_down: 'assets/ui/button_down.png'
+                border: 0, 0, 0, 0
+                bold: True
+                on_release: root.volver_menu()
         Widget:
-            size_hint_y: 0.1
+            # Al no tener size_hint_y: None, Kivy le asigna size_hint_y: 1 por defecto.
+            # Devorará implacablemente todo el espacio vacío en la pantalla,
+            # empujando tus dos paneles hacia arriba.
 
-        Button:
-            text: 'VOLVER AL MENÚ'
+
+<PantallaPractica>:
+
+    BoxLayout:
+        orientation: 'vertical'
+        padding: dp(30)
+        spacing: dp(15)
+        canvas.before:
+            Color:
+                # rgba: 0.12, 0.29, 0.42, 1
+                rgba: 1, 1, 1, 1
+            Rectangle:
+                pos: self.pos
+                size: self.size
+                source: 'assets/ui/bg_2.png'
+        BoxLayout:
+            orientation: 'vertical'
+            # Comprimimos el panel para que no ocupe todo el ancho de la pantalla
+            size_hint_x: 0.95
+            pos_hint: {'center_x': 0.5} # Lo forzamos al centro absoluto
+
+            # Ajuste dinámico de altura: el panel abrazará su contenido
             size_hint_y: None
-            height: dp(55)
-            background_color: 0.8, 0.6, 0.1, 1
-            bold: True
-            on_release: root.volver_menu()
+            height: dp(100)
+
+            # Espaciado interno (padding) y separación entre labels (spacing)
+            padding: dp(25)
+            spacing: dp(15)
+
+            # Pintamos el panel subyugando el lienzo (canvas)
+            canvas.before:
+                Color:
+                    # Un azul más oscuro y translúcido para contrastar con el fondo
+                    rgba: 0.05, 0.15, 0.25, 0.3
+                RoundedRectangle:
+                    pos: self.pos
+                    size: self.size
+                    radius: [dp(15)] # Curvatura de las esquinas (¡Magia pura!)
+            Label:
+                id: lbl_usuario
+                text: 'Usuario'
+                font_size: '34sp'
+                bold: True
+                size_hint_y: 0.15
+                color: 1, 1, 1, 1
+
+        BoxLayout:
+            orientation: 'vertical'
+            size_hint_y: 0.8
+            pos_hint: {'center_x': 0.5} # Lo forzamos al centro absoluto
+            # Comprimimos el panel para que no ocupe todo el ancho de la pantalla
+            size_hint_x: 0.95
+            padding: dp(25)
+            spacing: dp(15)
+            canvas.before:
+                Color:
+                    # Un azul más oscuro y translúcido para contrastar con el fondo
+                    rgba: 0.05, 0.15, 0.25, 0.3
+                RoundedRectangle:
+                    pos: self.pos
+                    size: self.size
+                    radius: [dp(15)] # Curvatura de las esquinas (¡Magia pura!)
+            Button:
+                text: 'PUZZLES'
+                size_hint_y: None
+                height: dp(55)
+                background_color: 0.2, 0.8, 0.4, 1
+                background_normal: 'assets/ui/button.png'
+                background_down: 'assets/ui/button_down.png'
+                border: 0, 0, 0, 0
+                bold: True
+                on_release: root.jugar_general()
+
+            Button:
+                text: 'TEMAS'
+                size_hint_y: None
+                height: dp(55)
+                background_color: 0.5, 0.5, 0.5, 1
+                background_normal: 'assets/ui/button.png'
+                background_down: 'assets/ui/button_down.png'
+                border: 0, 0, 0, 0
+                bold: True
+                on_release: root.abrir_temas()
+
+            Button:
+                text: 'ESCUELA'
+                size_hint_y: None
+                height: dp(55)
+                background_color: 0.5, 0.5, 0.5, 1
+                background_normal: 'assets/ui/button.png'
+                background_down: 'assets/ui/button_down.png'
+                border: 0, 0, 0, 0
+                bold: True
+                on_release: root.abrir_escuela()
+
+            Widget:
+                size_hint_y: 0.1
+
+            Button:
+                text: 'VOLVER AL MENU'
+                size_hint_y: None
+                height: dp(55)
+                background_color: 0.8, 0.6, 0.1, 1
+                background_normal: 'assets/ui/button.png'
+                background_down: 'assets/ui/button_down.png'
+                border: 0, 0, 0, 0
+                bold: True
+                on_release: root.volver_menu()
 
 <PopupBorrarUsuario>:
     title: 'Confirmar Ejecución'
@@ -481,11 +762,17 @@
             Button:
                 text: 'Cancelar'
                 background_color: 0.5, 0.5, 0.5, 1
+                background_normal: 'assets/ui/button.png'
+                background_down: 'assets/ui/button_down.png'
+                border: 0, 0, 0, 0
                 on_release: root.dismiss()
 
             Button:
                 text: 'ELIMINAR'
                 background_color: 0.8, 0.2, 0.2, 1
+                background_normal: 'assets/ui/button.png'
+                background_down: 'assets/ui/button_down.png'
+                border: 0, 0, 0, 0
                 bold: True
                 on_release: root.confirmar_borrado()
 
@@ -496,13 +783,15 @@
         spacing: dp(15)
         canvas.before:
             Color:
-                rgba: 0.12, 0.29, 0.42, 1
+                # rgba: 0.12, 0.29, 0.42, 1
+                rgba: 1, 1, 1, 1
             Rectangle:
                 pos: self.pos
                 size: self.size
+                source: 'assets/ui/bg_1.png'
 
         Label:
-            text: '[b]GESTIÓN DE USUARIOS[/b]'
+            text: '[b]GESTION DE USUARIOS[/b]'
             markup: True
             halign: 'center'
             font_size: '28sp'
@@ -520,8 +809,18 @@
 
         BoxLayout:
             orientation: 'vertical'
-            size_hint_y: 0.4
-            spacing: dp(10)
+            size_hint_y: 0.3
+            pos_hint: {'center_x': 0.5} # Lo forzamos al centro absoluto
+            padding: dp(25)
+            spacing: dp(15)
+            canvas.before:
+                Color:
+                    # Un azul más oscuro y translúcido para contrastar con el fondo
+                    rgba: 0.05, 0.15, 0.25, 0.3
+                RoundedRectangle:
+                    pos: self.pos
+                    size: self.size
+                    radius: [dp(15)] # Curvatura de las esquinas (¡Magia pura!)
 
             BoxLayout:
                 orientation: 'horizontal'
@@ -548,28 +847,55 @@
                 size_hint_y: None
                 height: dp(50)
                 background_color: 0.2, 0.8, 0.4, 1
+                background_normal: 'assets/ui/button.png'
+                background_down: 'assets/ui/button_down.png'
+                border: 0, 0, 0, 0
                 bold: True
                 on_release: root.crear_usuario()
-
+            Widget:
+                size_hint_y: None
+                height: dp(5)
             Button:
-                text: 'VOLVER AL MENÚ'
+                text: 'VOLVER AL MENU'
                 size_hint_y: None
                 height: dp(50)
                 background_color: 0.8, 0.4, 0.1, 1
+                background_normal: 'assets/ui/button.png'
+                background_down: 'assets/ui/button_down.png'
+                border: 0, 0, 0, 0
                 bold: True
                 on_release: root.volver_menu()
 
 <PopupEnConstruccion>:
-    title: 'Módulo en Desarrollo'
+    title: 'En Desarrollo'
+    title_font_size: '24sp'
     size_hint: 0.7, 0.3
-    auto_dismiss: True
+    auto_dismiss: False
     separator_color: 0.8, 0.6, 0.1, 1
 
     BoxLayout:
         orientation: 'vertical'
         padding: dp(20)
+        spacing: dp(15)
 
         Label:
-            text: 'Sergio está forjando esta característica\\nen las fraguas del código.'
+            text: 'Se esta forjando esta caracteristica en las fraguas del codigo.'
             halign: 'center'
+            valign: 'middle'
             font_size: '16sp'
+
+            # Magia negra para obligar a Kivy a hacer saltos de línea (word-wrap)
+            text_size: self.size
+
+        # Inyectamos el botón que tu exquisito diseño exige
+        Button:
+            text: 'VOLVER'
+            size_hint_y: None
+            height: dp(50)
+            background_color: 0.8, 0.4, 0.1, 1
+            background_normal: 'assets/ui/button.png'
+            background_down: 'assets/ui/button_down.png'
+            border: 0, 0, 0, 0
+            bold: True
+            # root.dismiss() aniquila la ventana modal y nos devuelve a la pantalla anterior
+            on_release: root.dismiss()
