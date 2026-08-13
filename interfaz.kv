@@ -65,7 +65,7 @@
     Label:
         id: lbl_mision
         text: 'Puzzle ELO: --'
-        font_size: '16sp'  # ¡Reducido de 28sp para mortales!
+        font_size: '14sp'  # ¡Reducido de 28sp para mortales!
         bold: True
         size_hint_y: 0.15
         color: 0.1, 0.8, 0.8, 1
@@ -348,7 +348,7 @@
         BoxLayout:
             orientation: 'vertical'
             # Comprimimos el panel para que no ocupe todo el ancho de la pantalla
-            size_hint_x: 0.8
+            size_hint_x: 0.95
             pos_hint: {'center_x': 0.5} # Lo forzamos al centro absoluto
 
             # Ajuste dinámico de altura: el panel abrazará su contenido
@@ -372,7 +372,7 @@
             # Inyectamos los botones dentro de esta nueva jaula
             Button:
                 text: 'CONFIGURACION'
-                font_size: '14sp'
+                font_size: '12sp'
                 size_hint_y: None
                 height: dp(60)
                 background_color: 0.2, 0.6, 0.8, 1
@@ -384,7 +384,7 @@
 
             Button:
                 text: 'CAMBIAR USUARIO'
-                font_size: '14sp'
+                font_size: '12sp'
                 size_hint_y: None
                 height: dp(60)
                 # size_hint_x: None # fuerza tamaño horizontal fijo del boton
@@ -399,7 +399,7 @@
 
             Button:
                 text: 'GESTION DE USUARIOS'
-                font_size: '14sp'
+                font_size: '12sp'
                 size_hint_y: None
                 height: dp(60)
                 background_color: 0.8, 0.6, 0.1, 1
@@ -411,7 +411,7 @@
 
             Button:
                 text: 'PRACTICAR'
-                font_size: '14sp'
+                font_size: '12sp'
                 size_hint_y: None
                 height: dp(60)
                 background_color: 0.8, 0.6, 0.8, 1
@@ -425,7 +425,7 @@
                 height: dp(20)
             Button:
                 text: 'SALIR DEL JUEGO'
-                font_size: '14sp'
+                font_size: '12sp'
                 size_hint_y: None
                 height: dp(60)
                 background_color: 0.8, 0.2, 0.2, 1
@@ -574,7 +574,7 @@
         BoxLayout:
             orientation: 'vertical'
             # Comprimimos el panel para que no ocupe todo el ancho de la pantalla
-            size_hint_x: 0.8
+            size_hint_x: 0.95
             pos_hint: {'center_x': 0.5} # Lo forzamos al centro absoluto
 
             # Ajuste dinámico de altura: el panel abrazará su contenido
@@ -596,7 +596,7 @@
                     radius: [dp(15)] # Curvatura de las esquinas (¡Magia pura!)
             Button:
                 text: 'CAMBIAR ELO'
-                font_size: '14sp'
+                font_size: '10sp'
                 size_hint_y: None
                 height: dp(55)
                 background_color: 0.2, 0.6, 0.8, 1
@@ -608,7 +608,7 @@
 
             Button:
                 text: 'BORRAR REGISTROS'
-                font_size: '14sp'
+                font_size: '10sp'
                 size_hint_y: None
                 height: dp(55)
                 background_color: 0.8, 0.2, 0.2, 1
@@ -625,7 +625,7 @@
 
             Button:
                 text: 'VOLVER AL MENU'
-                font_size: '14sp'
+                font_size: '10sp'
                 size_hint_y: None
                 height: dp(55)
                 background_color: 0.8, 0.6, 0.1, 1
@@ -877,6 +877,10 @@
                 border: 0, 0, 0, 0
                 bold: True
                 on_release: root.volver_menu()
+        Widget:
+            # Al no tener size_hint_y: None, Kivy le asigna size_hint_y: 1 por defecto.
+            # Devorará implacablemente todo el espacio vacío en la pantalla,
+            # empujando tus dos paneles hacia arriba.
 
 <PopupEnConstruccion>:
     title: 'En Desarrollo'
