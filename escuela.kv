@@ -1,0 +1,226 @@
+<BotonTemaEscuela@Button>:
+    size_hint_y: None
+    height: dp(65)
+    font_size: '16sp'
+    background_color: 0.2, 0.6, 0.8, 1
+    background_normal: 'assets/ui/button.png'
+    background_down: 'assets/ui/button_down.png'
+    border: 0, 0, 0, 0
+    bold: True
+
+<FilaUnidadEscuela>:
+    orientation: 'horizontal'
+    size_hint_y: None
+    height: dp(50)
+    spacing: dp(10)
+    canvas.before:
+        Color:
+            # Magia visual para iluminar la fila entera cuando el usuario pulsa sobre ella
+            rgba: (0.2, 0.4, 0.6, 0.8) if self.state == 'down' else (0.1, 0.1, 0.1, 0.2)
+        RoundedRectangle:
+            pos: self.pos
+            size: self.size
+            radius: [dp(8)]
+
+    Label:
+        text: root.texto_unidad
+        font_size: '14sp'
+        color: 1, 1, 1, 1
+        halign: 'left'
+        valign: 'middle'
+        text_size: self.size
+        padding_x: dp(10)
+
+    CheckBox:
+        size_hint_x: 0.2
+        active: root.completada
+        color: 0.2, 0.8, 0.4, 1
+        on_active: root.al_alternar(self.active)
+
+<PantallaEscuelaTemas>:
+    BoxLayout:
+        orientation: 'vertical'
+        padding: dp(30)
+        spacing: dp(20)
+        canvas.before:
+            Color:
+                rgba: 1, 1, 1, 1
+            Rectangle:
+                pos: self.pos
+                size: self.size
+                source: 'assets/ui/bg_2.png'
+
+        Label:
+            text: '[b]ESCUELA DE AJEDREZ[/b]'
+            markup: True
+            font_size: '24sp'
+            size_hint_y: 0.15
+            color: 0.1, 0.8, 0.8, 1
+
+        ScrollView:
+            size_hint_y: 0.65
+            GridLayout:
+                cols: 1
+                spacing: dp(15)
+                size_hint_y: None
+                height: self.minimum_height
+
+                BotonTemaEscuela:
+                    text: 'TACTICA'
+                    on_release: root.abrir_tema('tactica')
+
+                BotonTemaEscuela:
+                    text: 'MATES IMPRESCINDIBLES'
+                    on_release: root.abrir_tema('mates')
+
+                BotonTemaEscuela:
+                    text: 'FINALES DE PEONES'
+                    on_release: root.abrir_tema('finales')
+
+                BotonTemaEscuela:
+                    text: 'APERTURAS BASICAS'
+                    on_release: root.abrir_tema('aperturas')
+
+        Button:
+            text: 'VOLVER AL MENU'
+            size_hint_y: None
+            height: dp(55)
+            background_color: 0.8, 0.6, 0.1, 1
+            background_normal: 'assets/ui/button.png'
+            background_down: 'assets/ui/button_down.png'
+            border: 0, 0, 0, 0
+            bold: True
+            on_release: root.volver_menu()
+
+<PantallaEscuelaUnidades>:
+    BoxLayout:
+        orientation: 'vertical'
+        padding: dp(30)
+        spacing: dp(15)
+        canvas.before:
+            Color:
+                rgba: 1, 1, 1, 1
+            Rectangle:
+                pos: self.pos
+                size: self.size
+                source: 'assets/ui/bg_3.png'
+
+        Label:
+            id: lbl_titulo_tema
+            text: '[b]TEMA SELECCIONADO[/b]'
+            markup: True
+            font_size: '20sp'
+            size_hint_y: 0.1
+            color: 0.9, 0.9, 0.9, 1
+
+        ScrollView:
+            size_hint_y: 0.7
+            GridLayout:
+                id: grid_unidades
+                cols: 1
+                spacing: dp(5)
+                size_hint_y: None
+                height: self.minimum_height
+
+        BoxLayout:
+            size_hint_y: None
+            height: dp(55)
+            spacing: dp(15)
+
+            Button:
+                text: 'VOLVER'
+                background_color: 0.8, 0.4, 0.1, 1
+                background_normal: 'assets/ui/button.png'
+                background_down: 'assets/ui/button_down.png'
+                border: 0, 0, 0, 0
+                bold: True
+                on_release: root.volver_temas()
+
+            Button:
+                text: 'SIGUIENTE'
+                background_color: 0.2, 0.8, 0.4, 1
+                background_normal: 'assets/ui/button.png'
+                background_down: 'assets/ui/button_down.png'
+                border: 0, 0, 0, 0
+                bold: True
+                on_release: root.siguiente_unidad()
+
+<TextoLeccion@Label>:
+    # ¡Drástica amputación de la ceguera! Subimos de 11sp a 14sp
+    font_size: '14sp'
+    color: 0.9, 0.9, 0.9, 1
+    text_size: self.width, None
+    size_hint_y: None
+    height: self.texture_size[1]
+    halign: 'left'
+    valign: 'top'
+    valign: 'top'
+
+<ContenedorTableroMini@AnchorLayout>:
+    size_hint_y: None
+    # Mantenemos proporciones cuadradas basándonos en el ancho
+    height: self.width * 0.8
+    GridLayout:
+        id: grid
+        cols: 8
+        rows: 8
+        size_hint: None, None
+        width: root.width * 0.8
+        height: root.width * 0.8
+        canvas.before:
+            Color:
+                rgba: 0.8, 0.6, 0.1, 1
+            Line:
+                width: 1.5
+                rectangle: self.x, self.y, self.width, self.height
+
+<PantallaVisorUnidad>:
+    BoxLayout:
+        orientation: 'vertical'
+        padding: dp(20)
+        spacing: dp(15)
+        canvas.before:
+            Color:
+                rgba: 1, 1, 1, 1
+            Rectangle:
+                pos: self.pos
+                size: self.size
+                source: 'assets/ui/bg_3.png'
+
+        Label:
+            id: lbl_titulo
+            text: '[b]TITULO DE LA LECCION[/b]'
+            markup: True
+            font_size: '18sp'
+            size_hint_y: 0.1
+            color: 0.1, 0.8, 0.8, 1
+
+        ScrollView:
+            size_hint_y: 0.75
+            font_size: '18sp'
+            BoxLayout:
+                # Este contenedor ahora devorará widgets dinámicos creados en Python
+                id: contenedor_contenido
+                orientation: 'vertical'
+                size_hint_y: None
+                height: self.minimum_height
+                padding: dp(15)
+                spacing: dp(15)
+                canvas.before:
+                    Color:
+                        rgba: 0.05, 0.15, 0.25, 0.6
+                    RoundedRectangle:
+                        pos: self.pos
+                        size: self.size
+                        radius: [dp(12)]
+
+        Button:
+            text: 'VOLVER AL TEMARIO'
+            size_hint_y: None
+            height: dp(55)
+            background_color: 0.8, 0.4, 0.1, 1
+            background_normal: 'assets/ui/button.png'
+            background_down: 'assets/ui/button_down.png'
+            border: 0, 0, 0, 0
+            bold: True
+            on_release: root.volver_unidades()

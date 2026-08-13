@@ -46,6 +46,8 @@ from chess_manager import ChessManager
 from puzzle_manager import PuzzleManager, GestorProgresionPop
 from perfil_manager import PerfilManager
 from utilidades import CalculadorElo
+from escuela_controladores import PantallaEscuelaTemas, PantallaEscuelaUnidades, PantallaVisorUnidad
+from escuela_controladores import PantallaVisorUnidad
 
 
 # Diccionario maestro para purgar el inglés del CSV
@@ -72,6 +74,7 @@ if platform != 'android' and platform != 'ios':
 
 # Diseño KV purgado y estructurado sin errores de indentación en el parser[cite: 3]
 Builder.load_file('interfaz.kv')
+Builder.load_file('escuela.kv')
 
 from kivy.uix.screenmanager import Screen
 from kivy.uix.button import Button
@@ -1037,23 +1040,25 @@ class PantallaConfiguracion(Screen):
         """Retorna a la pantalla principal de la aplicación."""
         App.get_running_app().sm.current = 'menu_principal'
 
-    def abrir_temas(self) -> None:
-        """
-        Despliega un aviso temporal (Placeholder) para el futuro selector de temas.
-        """
-        PopupEnConstruccion().open()
-
-    def abrir_escuela(self) -> None:
-        """
-        Despliega un aviso temporal (Placeholder) para el futuro módulo de aprendizaje.
-        """
-        PopupEnConstruccion().open()
-
-    def jugar_general(self) -> None:
-        """Propulsa la aplicación hacia el tablero de juego estándar."""
-        app = App.get_running_app()
-        if self.perfil_actual:
-            app.iniciar_juego(self.perfil_actual["nombre"])
+    # def abrir_temas(self) -> None:
+    #     """
+    #     Despliega un aviso temporal (Placeholder) para el futuro selector de temas.
+    #     """
+    #     PopupEnConstruccion().open()
+    #
+    # def abrir_escuela(self) -> None:
+    #     """
+    #     Despacha el evento al gestor de pantallas de Kivy para cargar la Vista
+    #     de selección de temario.
+    #     """
+    #     from kivy.app import App
+    #     App.get_running_app().sm.current = 'escuela_temas'
+    #
+    # def jugar_general(self) -> None:
+    #     """Propulsa la aplicación hacia el tablero de juego estándar."""
+    #     app = App.get_running_app()
+    #     if self.perfil_actual:
+    #         app.iniciar_juego(self.perfil_actual["nombre"])
 
     def volver_menu(self) -> None:
         """Retrocede bruscamente al menú principal."""
@@ -1099,9 +1104,11 @@ class PantallaPractica(Screen):
 
     def abrir_escuela(self) -> None:
         """
-        Despliega un aviso temporal (Placeholder) para el futuro módulo de aprendizaje.
+        Despacha el evento al gestor de pantallas de Kivy para cargar la Vista
+        de selección de temario.
         """
-        PopupEnConstruccion().open()
+        from kivy.app import App
+        App.get_running_app().sm.current = 'escuela_temas'
 
 
 class PantallaMenuPrincipal(Screen):
@@ -1332,6 +1339,23 @@ class ChessApp(App):
         # Forzamos la entrada inicial al menú principal por si Kivy se despista
         self.sm.current = 'menu_principal'
 
+        # 7. Controlador de Categorías de la Escuela
+        pantalla_escuela_temas = PantallaEscuelaTemas(name='escuela_temas')
+        self.sm.add_widget(pantalla_escuela_temas)
+
+        # 8. Visor de Unidades y Temario
+        pantalla_escuela_unidades = PantallaEscuelaUnidades(
+            gestor_perfiles=self.gestor_perfiles,
+            name='escuela_unidades'
+        )
+        self.sm.add_widget(pantalla_escuela_unidades)
+
+        # Visor Teórico de Unidades (La cura definitiva para tu error)
+        pantalla_visor = PantallaVisorUnidad(name='escuela_visor')
+        self.sm.add_widget(pantalla_visor)
+
+        # Forzamos la entrada inicial al menú principal
+        self.sm.current = 'menu_principal'
         return self.sm
 
     def iniciar_juego(self, nombre_usuario):
