@@ -180,20 +180,32 @@ class VistaTablero(BoxLayout):
         self.gestor_perfiles = gestor_perfiles
         self.diccionario_casillas = {}
 
-        # Cargamos los molestos pero necesarios efectos de sonido en la RAM[cite: 3]
-        self.sonido_seleccionar = SoundLoader.load('assets/sounds/select.wav')
-        self.sonido_mover = SoundLoader.load('assets/sounds/move.wav')
-        self.sonido_ganar = SoundLoader.load('assets/sounds/win.wav')
-        self.sonido_perder = SoundLoader.load('assets/sounds/lose.wav')
+        # Inyección de rutas absolutas para someter al sistema de archivos de Android
+        BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+        ruta_select = os.path.join(BASE_DIR, 'assets', 'sounds', 'select.wav')
+        ruta_move = os.path.join(BASE_DIR, 'assets', 'sounds', 'move.wav')
+        ruta_win = os.path.join(BASE_DIR, 'assets', 'sounds', 'win.wav')
+        ruta_lose = os.path.join(BASE_DIR, 'assets', 'sounds', 'lose.wav')
+
+        self.sonido_seleccionar = SoundLoader.load(ruta_select)
+        self.sonido_mover = SoundLoader.load(ruta_move)
+        self.sonido_ganar = SoundLoader.load(ruta_win)
+        self.sonido_perder = SoundLoader.load(ruta_lose)
 
         # Mapa de sprites para asociar la notación FEN con nuestros PNGs[cite: 3]
         self.mapa_imagenes = {
-            'P': 'assets/pieces/blanco_peon.png', 'p': 'assets/pieces/negro_peon.png',
-            'N': 'assets/pieces/blanco_caballo.png', 'n': 'assets/pieces/negro_caballo.png',
-            'B': 'assets/pieces/blanco_alfil.png', 'b': 'assets/pieces/negro_alfil.png',
-            'R': 'assets/pieces/blanco_torre.png', 'r': 'assets/pieces/negro_torre.png',
-            'Q': 'assets/pieces/blanco_reina.png', 'q': 'assets/pieces/negro_reina.png',
-            'K': 'assets/pieces/blanco_rey.png', 'k': 'assets/pieces/negro_rey.png'
+            'P': os.path.join(BASE_DIR, 'assets', 'pieces', 'blanco_peon.png'),
+            'p': os.path.join(BASE_DIR, 'assets', 'pieces', 'negro_peon.png'),
+            'N': os.path.join(BASE_DIR, 'assets', 'pieces', 'blanco_caballo.png'),
+            'n': os.path.join(BASE_DIR, 'assets', 'pieces', 'negro_caballo.png'),
+            'B': os.path.join(BASE_DIR, 'assets', 'pieces', 'blanco_alfil.png'),
+            'b': os.path.join(BASE_DIR, 'assets', 'pieces', 'negro_alfil.png'),
+            'R': os.path.join(BASE_DIR, 'assets', 'pieces', 'blanco_torre.png'),
+            'r': os.path.join(BASE_DIR, 'assets', 'pieces', 'negro_torre.png'),
+            'Q': os.path.join(BASE_DIR, 'assets', 'pieces', 'blanco_reina.png'),
+            'q': os.path.join(BASE_DIR, 'assets', 'pieces', 'negro_reina.png'),
+            'K': os.path.join(BASE_DIR, 'assets', 'pieces', 'blanco_rey.png'),
+            'k': os.path.join(BASE_DIR, 'assets', 'pieces', 'negro_rey.png')
         }
         self.inicializar_tablero()
         self.actualizar_piezas_visuales()
@@ -283,7 +295,7 @@ class VistaTablero(BoxLayout):
         if info:
             elo_jugador_entero = int(self.perfil_actual.get("elo", 600))
             self.ids.lbl_mision.text = f"Tu ELO: {elo_jugador_entero} | Puzzle ELO: {info.get('rating', '--')}"
-            self.ids.lbl_info.text = f"Popularidad: {info.get('popularity', '--')}% | ID: {info.get('id', '--')}"
+            self.ids.lbl_info.text = f"Popularidad: {info.get('popularity', '--')}%\nID: {info.get('id', '--')}"
 
             es_blancas = tablero.turn == chess.WHITE
             color_turno = "[color=#ff6b6b]NEGRAS[/color]" if not es_blancas else "[color=#ffffff]BLANCAS[/color]"

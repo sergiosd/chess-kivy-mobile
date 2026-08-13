@@ -226,7 +226,9 @@ package.name = kivychess
 
 package.domain = org.sergiosd
 
-source.include_exts = py,png,jpg,kv,atlas,wav,json,csv
+source.include_exts = py,png,jpg,kv,atlas,wav,json,csv, ttf
+
+source.include_patterns = assets/*, assets/fonts/*, assets/pieces/*, assets/squares/*, assets/ui/*, assets/sounds/*
 
 requirements = python3,kivy,chess
 

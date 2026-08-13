@@ -35,7 +35,7 @@
 
     Label:
         text: root.texto_fila
-        font_size: '12sp'
+        font_size: '9sp'
         bold: True
         color: 0.1, 0.1, 0.1, 0.8
         size_hint: None, None
@@ -44,7 +44,7 @@
 
     Label:
         text: root.texto_col
-        font_size: '12sp'
+        font_size: '9sp'
         bold: True
         color: 0.1, 0.1, 0.1, 0.8
         size_hint: None, None
@@ -65,7 +65,7 @@
     Label:
         id: lbl_mision
         text: 'Puzzle ELO: --'
-        font_size: '20sp'  # ¡Reducido de 28sp para mortales!
+        font_size: '16sp'  # ¡Reducido de 28sp para mortales!
         bold: True
         size_hint_y: 0.15
         color: 0.1, 0.8, 0.8, 1
@@ -115,7 +115,7 @@
         Label:
             id: lbl_info
             text: 'Nivel: --'
-            font_size: '16sp'
+            font_size: '12sp'
             color: 0, 0.8, 0.7, 1
             bold: True
             text_size: self.size
@@ -210,7 +210,7 @@
             text: '[b]SELECCIONA OTRO PERFIL[/b]'
             markup: True
             halign: 'center'
-            font_size: '28sp'
+            font_size: '18sp'
             color: 0.2, 0.8, 0.4, 1
             size_hint_y: 0.15
 
@@ -225,7 +225,7 @@
         BoxLayout:
             orientation: 'vertical'
             # Comprimimos el panel para que no ocupe todo el ancho de la pantalla
-            size_hint_x: 0.6
+            size_hint_x: 0.8
             pos_hint: {'center_x': 0.5} # Lo forzamos al centro absoluto
 
             # Ajuste dinámico de altura: el panel abrazará su contenido
@@ -247,6 +247,7 @@
                     radius: [dp(15)] # Curvatura de las esquinas (¡Magia pura!)
             Button:
                 text: 'VOLVER AL MENU'
+                font_size: '24sp'
                 size_hint_y: None
                 height: dp(60)
                 background_color: 0.8, 0.4, 0.1, 1
@@ -300,7 +301,7 @@
         #    text: '[b]MIND CHESS[/b]'
         #    markup: True
         #    halign: 'center'
-        #    font_size: '42sp'
+        #    font_size: '24sp'
         #    color: 0.1, 0.8, 0.8, 1
         #    size_hint_y: 0.25
 
@@ -333,13 +334,13 @@
                 text: '[b]MIND CHESS[/b]'
                 markup: True
                 halign: 'center'
-                font_size: '42sp'
+                font_size: '24sp'
                 color: 0.1, 0.8, 0.8, 1
                 size_hint_y: 0.25
             Label:
                 id: lbl_usuario
                 text: 'USUARIO: '
-                font_size: '28sp'
+                font_size: '16sp'
                 color: 1, 1, 1, 1
                 bold: True
                 size_hint_y: 0.15
@@ -371,6 +372,7 @@
             # Inyectamos los botones dentro de esta nueva jaula
             Button:
                 text: 'CONFIGURACION'
+                font_size: '14sp'
                 size_hint_y: None
                 height: dp(60)
                 background_color: 0.2, 0.6, 0.8, 1
@@ -382,6 +384,7 @@
 
             Button:
                 text: 'CAMBIAR USUARIO'
+                font_size: '14sp'
                 size_hint_y: None
                 height: dp(60)
                 # size_hint_x: None # fuerza tamaño horizontal fijo del boton
@@ -396,6 +399,7 @@
 
             Button:
                 text: 'GESTION DE USUARIOS'
+                font_size: '14sp'
                 size_hint_y: None
                 height: dp(60)
                 background_color: 0.8, 0.6, 0.1, 1
@@ -407,6 +411,7 @@
 
             Button:
                 text: 'PRACTICAR'
+                font_size: '14sp'
                 size_hint_y: None
                 height: dp(60)
                 background_color: 0.8, 0.6, 0.8, 1
@@ -420,6 +425,7 @@
                 height: dp(20)
             Button:
                 text: 'SALIR DEL JUEGO'
+                font_size: '14sp'
                 size_hint_y: None
                 height: dp(60)
                 background_color: 0.8, 0.2, 0.2, 1
@@ -494,6 +500,7 @@
 
         Label:
             text: '¿Borrar absolutamente todo?'
+            font_size: '14sp'
             color: 1, 0.2, 0.2, 1
             font_size: '16sp'
             bold: True
@@ -505,7 +512,8 @@
 
             Button:
                 text: 'Cancelar'
-                background_color: 0.5, 0.5, 0.5, 1
+                font_size: '14sp'
+                background_color: 0.5, 0.5, 0.9, 1
                 background_normal: 'assets/ui/button.png'
                 background_down: 'assets/ui/button_down.png'
                 border: 0, 0, 0, 0
@@ -513,7 +521,8 @@
 
             Button:
                 text: 'ELIMINAR'
-                background_color: 0.8, 0.2, 0.2, 1
+                font_size: '14sp'
+                background_color: 0.9, 0.5, 0.5, 1
                 background_normal: 'assets/ui/button.png'
                 background_down: 'assets/ui/button_down.png'
                 border: 0, 0, 0, 0
@@ -558,7 +567,7 @@
             Label:
                 id: lbl_usuario
                 text: 'Usuario'
-                font_size: '34sp'
+                font_size: '24sp'
                 bold: True
                 size_hint_y: 0.15
                 color: 1, 1, 1, 1
@@ -587,6 +596,7 @@
                     radius: [dp(15)] # Curvatura de las esquinas (¡Magia pura!)
             Button:
                 text: 'CAMBIAR ELO'
+                font_size: '14sp'
                 size_hint_y: None
                 height: dp(55)
                 background_color: 0.2, 0.6, 0.8, 1
@@ -598,6 +608,7 @@
 
             Button:
                 text: 'BORRAR REGISTROS'
+                font_size: '14sp'
                 size_hint_y: None
                 height: dp(55)
                 background_color: 0.8, 0.2, 0.2, 1
@@ -614,6 +625,7 @@
 
             Button:
                 text: 'VOLVER AL MENU'
+                font_size: '14sp'
                 size_hint_y: None
                 height: dp(55)
                 background_color: 0.8, 0.6, 0.1, 1
@@ -792,9 +804,9 @@
 
         Label:
             text: '[b]GESTION DE USUARIOS[/b]'
+            font_size: '18sp'
             markup: True
             halign: 'center'
-            font_size: '28sp'
             color: 0.8, 0.6, 0.1, 1
             size_hint_y: 0.15
 
@@ -832,14 +844,14 @@
                     id: input_nuevo_nombre
                     hint_text: 'Nuevo usuario...'
                     multiline: False
-                    font_size: '18sp'
+                    font_size: '12sp'
 
                 TextInput:
                     id: input_nuevo_elo
                     hint_text: 'ELO'
                     input_filter: 'int'
                     multiline: False
-                    font_size: '18sp'
+                    font_size: '12sp'
                     size_hint_x: 0.5
 
             Button:
