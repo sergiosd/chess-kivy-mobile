@@ -10,5 +10,8 @@
     ],
     "partidas_jugadas": 13,
     "escala_pop": 0,
-    "victorias_100": 2
+    "victorias_100": 2,
+    "progreso_escuela": {
+        "tac_01": true
+    }
 }

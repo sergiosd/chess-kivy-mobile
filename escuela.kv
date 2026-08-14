@@ -40,7 +40,7 @@
 <PantallaEscuelaTemas>:
     BoxLayout:
         orientation: 'vertical'
-        padding: dp(30)
+        padding: dp(25)
         spacing: dp(20)
         canvas.before:
             Color:
@@ -53,44 +53,42 @@
         Label:
             text: '[b]ESCUELA DE AJEDREZ[/b]'
             markup: True
-            font_size: '24sp'
+            font_size: '22sp'
             size_hint_y: 0.15
-            color: 0.1, 0.8, 0.8, 1
+            color: 0.1, 0.5, 0.6, 1 # Ajustado para que contraste mejor con el cielo
 
-        ScrollView:
-            size_hint_y: 0.65
-            GridLayout:
-                cols: 1
-                spacing: dp(15)
-                size_hint_y: None
-                height: self.minimum_height
+        # El contenedor ahora es 100% invisible, solo organiza el espacio
+        BoxLayout:
+            orientation: 'vertical'
+            size_hint_y: 0.70
+            pos_hint: {'center_x': 0.5}
+            padding: dp(10)
 
-                BotonTemaEscuela:
-                    text: 'TACTICA'
-                    on_release: root.abrir_tema('tactica')
+            # ¡Hemos aniquilado el asqueroso canvas.before de este contenedor!
 
-                BotonTemaEscuela:
-                    text: 'MATES IMPRESCINDIBLES'
-                    on_release: root.abrir_tema('mates')
+            ScrollView:
+                do_scroll_x: False
+                GridLayout:
+                    id: grid_temas
+                    cols: 1
+                    spacing: dp(12) # Más espacio entre tarjetas para que se vea el cielo
+                    size_hint_y: None
+                    height: self.minimum_height
+                    padding: [dp(5), dp(10)]
 
-                BotonTemaEscuela:
-                    text: 'FINALES DE PEONES'
-                    on_release: root.abrir_tema('finales')
-
-                BotonTemaEscuela:
-                    text: 'APERTURAS BASICAS'
-                    on_release: root.abrir_tema('aperturas')
-
-        Button:
-            text: 'VOLVER AL MENU'
-            size_hint_y: None
-            height: dp(55)
-            background_color: 0.8, 0.6, 0.1, 1
-            background_normal: 'assets/ui/button.png'
-            background_down: 'assets/ui/button_down.png'
-            border: 0, 0, 0, 0
-            bold: True
-            on_release: root.volver_menu()
+        AnchorLayout:
+            size_hint_y: 0.15
+            Button:
+                text: 'VOLVER AL MENU'
+                font_size: '14sp'
+                size_hint: 0.75, None
+                height: dp(50)
+                background_color: 0.8, 0.4, 0.1, 1
+                background_normal: 'assets/ui/button.png'
+                background_down: 'assets/ui/button_down.png'
+                border: 0, 0, 0, 0
+                bold: True
+                on_release: root.volver_menu()
 
 <PantallaEscuelaUnidades>:
     BoxLayout:
@@ -224,3 +222,68 @@
             border: 0, 0, 0, 0
             bold: True
             on_release: root.volver_unidades()
+
+<FilaTemaProgreso@ButtonBehavior+BoxLayout>:
+    # Propiedades dinámicas inyectadas por el Controlador
+    texto_tema: ''
+    porcentaje: 0
+    id_tema: ''
+    controlador: None
+
+    orientation: 'horizontal'
+    size_hint_y: None
+    height: dp(60)
+    padding: [dp(20), dp(5)]
+    spacing: dp(15)
+
+    # Diseño de Tarjeta Flotante (Card UI)
+    canvas.before:
+        Color:
+            # Blanco puro semi-opaco, se vuelve azulado al pulsar
+            rgba: (0.9, 0.95, 1, 0.95) if self.state == 'down' else (0.98, 0.98, 0.98, 0.95)
+        RoundedRectangle:
+            pos: self.pos
+            size: self.size
+            radius: [dp(12)]
+
+        Color:
+            # Borde elegante azul cian para enmarcar la tarjeta
+            rgba: 0.2, 0.6, 0.8, 0.6
+        Line:
+            width: 1.2
+            rounded_rectangle: (self.x, self.y, self.width, self.height, dp(12))
+
+    on_release:
+        if root.controlador: root.controlador.abrir_tema(root.id_tema)
+
+    Label:
+        text: root.texto_tema
+        font_name: 'Michroma'
+        font_size: '16sp'
+        color: 0.1, 0.2, 0.3, 1  # Texto oscuro y profesional
+        text_size: self.size
+        halign: 'left'
+        valign: 'middle'
+        bold: True
+
+    Label:
+        text: f"{root.porcentaje}%"
+        font_name: 'Michroma'
+        font_size: '16sp'
+        color: (0.1, 0.6, 0.2, 1) if root.porcentaje == 100 else (0.8, 0.4, 0.1, 1)
+        size_hint_x: None
+        width: dp(55)
+        halign: 'right'
+        valign: 'middle'
+        bold: True
+
+    Label:
+        text: '»'
+        font_name: 'Michroma'
+        font_size: '22sp'
+        color: 0.2, 0.6, 0.8, 0.8
+        size_hint_x: None
+        width: dp(25)
+        halign: 'center'
+        valign: 'middle'
+        bold: True

@@ -17,7 +17,7 @@ from kivy.config import Config
 # Esto evita que el clic derecho del ratón genere puntos rojos persistentes en PC.
 Config.set('input', 'mouse', 'mouse,disable_multitouch')
 
-
+import kivy
 from kivy.app import App
 from kivy.lang import Builder
 from kivy.uix.boxlayout import BoxLayout
@@ -1184,9 +1184,14 @@ def inyectar_tipografia_personalizada() -> None:
     """
     # Define la ruta exacta donde has guardado tu obra de arte tipográfica
     ruta_fuente = 'assets/fonts/BD_Cartoon_Shout.ttf'
-
+    ruta_michroma = 'assets/fonts/Michroma-Regular.ttf'
     # Secuestramos el núcleo tipográfico de Kivy
     LabelBase.register(DEFAULT_FONT, ruta_fuente)
+    LabelBase.register('Michroma', ruta_michroma)
+
+    # Resurrección de la tipografía seria
+    ruta_roboto = os.path.join(kivy.kivy_data_dir, 'fonts', 'Roboto-Regular.ttf')
+    LabelBase.register('RobotoSerio', ruta_roboto)
 
 inyectar_tipografia_personalizada()
 # class PantallaMenuPrincipal(Screen):

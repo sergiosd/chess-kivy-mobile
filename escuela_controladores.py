@@ -189,17 +189,99 @@ class FilaUnidadEscuela(ButtonBehavior, BoxLayout):
 
 
 class PantallaEscuelaTemas(Screen):
-    """Controlador gráfico principal para seleccionar bloques de estudio masivos."""
+    """
+    Controlador gráfico principal para seleccionar bloques de estudio masivos.
+
+    Orquesta la inyección dinámica de los temas en un único panel visual,
+    calculando en tiempo real el porcentaje de avance del usuario activo
+    mediante la lectura de su perfil en disco.
+    """
+
+    def on_pre_enter(self, *args) -> None:
+        """
+        Intercepta el ciclo de vida de Kivy antes de pintar la pantalla en el canvas.
+        Fuerza la actualización de métricas del jugador.
+        """
+        self.poblar_temas()
+
+    def poblar_temas(self) -> None:
+        """
+        Construye la lista de temas dentro del panel único calculando los progresos.
+        """
+        self.ids.grid_temas.clear_widgets()
+        app = App.get_running_app()
+
+        # Recuperación del progreso del usuario activo
+        nombre_usuario = app.gestor_perfiles.obtener_ultimo_usuario()
+        perfil = app.gestor_perfiles.cargar_perfil(nombre_usuario) if nombre_usuario else {}
+        progreso_usuario = perfil.get('progreso_escuela', {})
+
+        # Obtenemos el temario definido en la pantalla de unidades
+        pantalla_unidades = app.sm.get_screen('escuela_unidades')
+        temario = pantalla_unidades.TEMARIO
+
+        # Mapeo de identificadores a títulos legibles con tildes UTF-8
+        nombres_temas = {
+            'tactica': 'Táctica',
+            'mates': 'Mates Imprescindibles',
+            'finales': 'Finales de Peones',
+            'aperturas': 'Aperturas Básicas'
+        }
+
+        # Generamos dinámicamente cada fila interactiva dentro del panel único
+        for id_tema, titulo in nombres_temas.items():
+            lecciones = temario.get(id_tema, [])
+            total = len(lecciones)
+
+            completadas = sum(
+                1 for id_leccion, _ in lecciones
+                if progreso_usuario.get(id_leccion, False)
+            )
+
+            porcentaje = int((completadas / total * 100)) if total > 0 else 0
+
+            fila = Factory.FilaTemaProgreso()
+            fila.texto_tema = titulo
+            fila.porcentaje = porcentaje
+            fila.id_tema = id_tema
+            fila.controlador = self
+
+            self.ids.grid_temas.add_widget(fila)
 
     def abrir_tema(self, id_tema: str) -> None:
-        """Configura la pantalla de unidades con el contenido del bloque seleccionado."""
+        """
+        Configura y despliega la pantalla de unidades del bloque didáctico.
+
+        Args:
+            id_tema (str): Identificador interno del bloque temático.
+        """
         app = App.get_running_app()
         pantalla_unidades = app.sm.get_screen('escuela_unidades')
         pantalla_unidades.cargar_tema(id_tema)
         app.sm.current = 'escuela_unidades'
 
     def volver_menu(self) -> None:
-        """Abandona el entorno educativo retornando al menú general."""
+        """
+        Retorna a la pantalla del menú de prácticas de la aplicación.
+        """
+        App.get_running_app().sm.current = 'practica'
+
+    def abrir_tema(self, id_tema: str) -> None:
+        """
+        Configura la pantalla hija de unidades con el contenido del bloque seleccionado.
+
+        Args:
+            id_tema (str): El identificador interno del bloque de lecciones.
+        """
+        app = App.get_running_app()
+        pantalla_unidades = app.sm.get_screen('escuela_unidades')
+        pantalla_unidades.cargar_tema(id_tema)
+        app.sm.current = 'escuela_unidades'
+
+    def volver_menu(self) -> None:
+        """
+        Abandona el entorno educativo retornando al menú general de la aplicación.
+        """
         App.get_running_app().sm.current = 'menu_principal'
 
 
