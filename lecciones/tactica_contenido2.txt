@@ -1,0 +1,21 @@
+La tactica es uno de los pilares fundamentales del ajedrez. Podemos definirla como el conjunto de maniobras concretas, normalmente de corta duracion, mediante las cuales un jugador aprovecha la disposicion de las piezas para obtener una ventaja inmediata. Esta ventaja puede consistir en ganar material, conseguir una posicion decisiva, forzar el mate o evitar una amenaza del adversario.
+
+Mientras que la estrategia se ocupa principalmente de los planes a medio y largo plazo, la estructura de peones, las casillas debiles, la actividad de las piezas o la seguridad del rey, la tactica se basa en el calculo concreto de variantes. La estrategia nos indica que queremos conseguir; la tactica determina, muchas veces, como podemos conseguirlo.
+
+Su importancia es enorme. Una buena posicion estrategica puede quedar arruinada por un simple error tactico, mientras que una posicion aparentemente inferior puede transformarse por completo si existe una [PAGINA] combinacion favorable. Por esta razon, antes de realizar cualquier movimiento debemos prestar atencion a las amenazas, capturas y jugadas forzadas que existen en la posicion.
+
+[FEN: rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1 | C: f7-r, e4-g | A: e2e4-g, d1h5-r]
+
+El estudio de la tactica no consiste unicamente en aprender combinaciones espectaculares. Su verdadero objetivo es desarrollar la capacidad de reconocer patrones. Cuantos mas problemas [PAGINA] tacticos resolvemos, mas rapidamente identificamos determinadas configuraciones sobre el tablero. Con la practica, muchas ideas que inicialmente requieren varios minutos de analisis terminan siendo reconocidas casi de forma automatica.
+
+Entre los motivos tacticos mas importantes se encuentra la doble amenaza, en la que una misma jugada crea dos amenazas simultaneas y obliga al adversario a elegir cual de ellas defender. Un caso especialmente conocido es el tenedor, donde una pieza ataca al mismo tiempo dos o mas piezas enemigas.
+
+Otro recurso fundamental es la clavada. Se produce cuando una pieza no puede moverse, o hacerlo tendria graves consecuencias, porque detras de ella se encuentra una pieza de mayor valor o incluso el rey. Muy relacionada con ella esta la enfilada, donde se ataca primero una pieza de gran valor y, cuando esta se aparta, queda expuesta otra situada detras.[PAGINA]
+
+Tambien encontramos el ataque descubierto, que aparece cuando una pieza se mueve y libera la linea de ataque de otra. Su version mas peligrosa es el jaque descubierto, ya que el movimiento genera ademas una amenaza directa contra el rey. Cuando la pieza que se mueve tambien da jaque, se produce el poderoso jaque doble.
+
+Otros patrones esenciales son la desviacion, mediante la cual obligamos a una pieza defensora a abandonar una casilla o funcion importante; la atraccion, que fuerza una pieza enemiga a colocarse en una posicion desfavorable; la eliminacion del defensor, que busca destruir la pieza que protege un punto critico, y la sobrecarga, que explota una pieza encargada de defender simultaneamente varios objetivos.
+
+Finalmente, una categoria especialmente importante son los sacrificios, en los que se entrega voluntariamente material para conseguir una compensacion mayor: recuperar mas material posteriormente, destruir las defensas del rey o incluso [PAGINA] forzar el mate.
+
+A lo largo de este curso estudiaremos estos patrones de manera progresiva. El objetivo no sera unicamente resolver ejercicios, sino aprender a observar, identificar y calcular. La tactica mejora mediante la practica constante: cuanto mayor sea nuestra biblioteca mental de patrones, mas facil sera descubrirlos cuando aparezcan en una partida real.

@@ -125,12 +125,11 @@ class PantallaEscuelaUnidades(Screen):
         """
         Localiza el archivo de texto asociado a la unidad y lo inyecta en el visor teórico.
 
-        Si el archivo no existe en el sistema de directorios, inyecta un texto por
-        defecto.
+        Si el archivo no existe en el sistema de directorios inyecta un texto de error por defecto.
 
         Args:
-            id_leccion (str): Código interno de la lección para buscar el mapeo.
-            titulo (str): Texto amigable que se mostrará en la cabecera.
+            id_leccion (str): Código interno de la lección.
+            titulo (str): Texto amigable que se mostrará en la cabecera de la interfaz.
         """
         app = App.get_running_app()
         pantalla_visor = app.sm.get_screen('escuela_visor')
@@ -144,7 +143,8 @@ class PantallaEscuelaUnidades(Screen):
             with open(ruta_archivo, 'r', encoding='utf-8') as archivo:
                 texto = archivo.read()
 
-        pantalla_visor.cargar_contenido(titulo, texto)
+        # Inyección brutal del ID para que el visor sepa exactamente qué lección está manipulando
+        pantalla_visor.cargar_contenido(id_leccion, titulo, texto)
         app.sm.current = 'escuela_visor'
 
     def siguiente_unidad(self) -> None:
@@ -317,33 +317,70 @@ class CasillaMini(RelativeLayout):
 
 class PantallaVisorUnidad(Screen):
     """
-    Controlador dedicado a parsear archivos de texto y orquestar el renderizado
-    dinámico de teoría y minitableros interactivos FEN.
+    Controlador maestro de la lectura de lecciones tácticas.
+
+    Aniquila el texto en bruto, lo convierte en estados paginados independientes
+    y orquesta la interfaz gráfica para inyectar minitableros dinámicos.
     """
 
-    def cargar_contenido(self, titulo: str, texto: str) -> None:
+    def __init__(self, **kwargs):
         """
-        Destroza el texto crudo utilizando el delimitador de tablero para inyectar
-        secuencialmente bloques de teoría y componentes gráficos.
+        Inicializa las variables de estado en memoria RAM.
 
         Args:
-            titulo (str): Título principal de la unidad didáctica.
-            texto (str): Papiro masivo cargado desde el disco duro.
+            **kwargs: Metadatos requeridos por la espantosa arquitectura de Kivy.
         """
+        super().__init__(**kwargs)
+        self.id_leccion_actual = ""
+        self.paginas = []
+        self.indice_pagina = 0
+
+    def cargar_contenido(self, id_leccion: str, titulo: str, texto: str) -> None:
+        """
+        Aniquila el texto crudo y construye la lista de páginas lógicas.
+
+        Usa el delimitador [PAGINA] para estructurar la lectura de forma independiente
+        al contenido táctico.
+
+        Args:
+            id_leccion (str): Identificador único para registrar progreso.
+            titulo (str): Encabezado de la lección.
+            texto (str): Contenido completo cargado desde el disco.
+        """
+        self.id_leccion_actual = id_leccion
         self.ids.lbl_titulo.text = f"[b]{titulo.upper()}[/b]"
+        self.paginas = []
+        self.indice_pagina = 0
+
+        partes_pagina = texto.split('[PAGINA]')
+
+        for bloque in partes_pagina:
+            if bloque.strip():
+                self.paginas.append(bloque.strip())
+
+        self.mostrar_pagina()
+
+    def mostrar_pagina(self) -> None:
+        """
+        Limpia el lienzo e inyecta el contenido exclusivo de la página actual.
+
+        Analiza el texto activo buscando etiquetas FEN para intercalar
+        dinámicamente los minitableros y el texto.
+        """
+        if not self.paginas:
+            return
+
         contenedor = self.ids.contenedor_contenido
         contenedor.clear_widgets()
 
-        # El bisturí del parser: cortamos el texto donde encontremos nuestra etiqueta mágica
-        partes = texto.split('[FEN:')
+        texto_pagina = self.paginas[self.indice_pagina]
+        partes = texto_pagina.split('[FEN:')
 
         for i, bloque in enumerate(partes):
             if i == 0:
-                # El primer bloque siempre es texto puro antes del primer tablero
                 if bloque.strip():
                     self._agregar_texto(contenedor, bloque.strip())
             else:
-                # Los bloques sucesivos contienen un FEN seguido del símbolo ']' y más texto
                 subpartes = bloque.split(']', 1)
                 if len(subpartes) == 2:
                     codigo_fen = subpartes[0].strip()
@@ -354,9 +391,37 @@ class PantallaVisorUnidad(Screen):
                     if resto_texto.strip():
                         self._agregar_texto(contenedor, resto_texto.strip())
 
+        if self.indice_pagina == len(self.paginas) - 1 and self.id_leccion_actual:
+            app = App.get_running_app()
+            pantalla_unidades = app.sm.get_screen('escuela_unidades')
+            pantalla_unidades.registrar_progreso(self.id_leccion_actual, True)
+
+    def pagina_anterior(self) -> None:
+        """Resta el contador de página y redibuja la vista gráfica."""
+        if self.indice_pagina > 0:
+            self.indice_pagina -= 1
+            self.mostrar_pagina()
+
+    def pagina_siguiente(self) -> None:
+        """
+        Avanza devorando el conocimiento teórico.
+        Si ya está en la última página, ignora la pulsación.
+        """
+        if self.indice_pagina < len(self.paginas) - 1:
+            self.indice_pagina += 1
+            self.mostrar_pagina()
+
+    def volver_unidades(self) -> None:
+        """Ejecuta una retirada estratégica hacia el menú de unidades."""
+        App.get_running_app().sm.current = 'escuela_unidades'
+
     def _agregar_texto(self, contenedor, texto: str) -> None:
         """
-        Instancia dinámicamente un Label purgado de espacios injustificados.
+        Instancia una etiqueta de texto y la pega en el contenedor padre.
+
+        Args:
+            contenedor: Widget de Kivy contenedor.
+            texto (str): Teoría de ajedrez.
         """
         etiqueta = Factory.TextoLeccion()
         etiqueta.text = texto

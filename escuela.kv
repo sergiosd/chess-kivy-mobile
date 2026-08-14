@@ -168,14 +168,12 @@
                 on_release: root.siguiente_unidad()
 
 <TextoLeccion@Label>:
-    # ¡Drástica amputación de la ceguera! Subimos de 11sp a 14sp
     font_size: '14sp'
+    font_name: 'Michroma'
     color: 0.9, 0.9, 0.9, 1
-    text_size: self.width, None
-    size_hint_y: None
-    height: self.texture_size[1]
+    # Obligamos al texto a encajarse en la tarjeta
+    text_size: self.size
     halign: 'left'
-    valign: 'top'
     valign: 'top'
 
 <ContenedorTableroMini@AnchorLayout>:
@@ -213,39 +211,67 @@
             id: lbl_titulo
             text: '[b]TITULO DE LA LECCION[/b]'
             markup: True
-            font_size: '18sp'
+            font_size: '22sp'
             size_hint_y: 0.1
-            color: 0.1, 0.8, 0.8, 1
+            color: 0.05, 0.15, 0.25, 1
 
-        ScrollView:
-            size_hint_y: 0.75
-            font_size: '18sp'
+        BoxLayout:
+            orientation: 'vertical'
+            size_hint_y: 0.8
+            padding: dp(20)
+            spacing: dp(15)
+            canvas.before:
+                Color:
+                    rgba: 0.05, 0.15, 0.25, 0.8
+                RoundedRectangle:
+                    pos: self.pos
+                    size: self.size
+                    radius: [dp(15)]
+                Color:
+                    rgba: 0.2, 0.6, 0.8, 0.6
+                Line:
+                    width: 1.5
+                    rounded_rectangle: (self.x, self.y, self.width, self.height, dp(15))
+
             BoxLayout:
-                # Este contenedor ahora devorará widgets dinámicos creados en Python
                 id: contenedor_contenido
                 orientation: 'vertical'
-                size_hint_y: None
-                height: self.minimum_height
-                padding: dp(15)
                 spacing: dp(15)
-                canvas.before:
-                    Color:
-                        rgba: 0.05, 0.15, 0.25, 0.6
-                    RoundedRectangle:
-                        pos: self.pos
-                        size: self.size
-                        radius: [dp(12)]
 
-        Button:
-            text: 'VOLVER AL TEMARIO'
+        BoxLayout:
             size_hint_y: None
             height: dp(55)
-            background_color: 0.8, 0.4, 0.1, 1
-            background_normal: 'assets/ui/button.png'
-            background_down: 'assets/ui/button_down.png'
-            border: 0, 0, 0, 0
-            bold: True
-            on_release: root.volver_unidades()
+            spacing: dp(10)
+
+            Button:
+                text: 'ANTERIOR'
+                font_size: '14sp'
+                background_color: 0.2, 0.6, 0.8, 1
+                background_normal: 'assets/ui/button.png'
+                background_down: 'assets/ui/button_down.png'
+                border: 0, 0, 0, 0
+                bold: True
+                on_release: root.pagina_anterior()
+
+            Button:
+                text: 'TEMARIO'
+                font_size: '14sp'
+                background_color: 0.8, 0.4, 0.1, 1
+                background_normal: 'assets/ui/button.png'
+                background_down: 'assets/ui/button_down.png'
+                border: 0, 0, 0, 0
+                bold: True
+                on_release: root.volver_unidades()
+
+            Button:
+                text: 'SIGUIENTE'
+                font_size: '14sp'
+                background_color: 0.2, 0.8, 0.4, 1
+                background_normal: 'assets/ui/button.png'
+                background_down: 'assets/ui/button_down.png'
+                border: 0, 0, 0, 0
+                bold: True
+                on_release: root.pagina_siguiente()
 
 <FilaTemaProgreso@ButtonBehavior+BoxLayout>:
     # Propiedades dinámicas inyectadas por el Controlador
