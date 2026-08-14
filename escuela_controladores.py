@@ -60,12 +60,21 @@ class PantallaEscuelaUnidades(Screen):
     def cargar_tema(self, id_tema: str) -> None:
         """
         Construye las filas gráficas iterando sobre la base de datos local.
-
-        Args:
-            id_tema (str): Identificador de la categoría seleccionada por el usuario.
+        Aniquila prefijos innecesarios y formatea el título limpiamente.
         """
         self.tema_actual = id_tema
-        self.ids.lbl_titulo_tema.text = f"[b]TEMA: {id_tema.upper()}[/b]"
+
+        nombres_temas = {
+            'tactica': 'TACTICA',
+            'mates': 'MATES IMPRESCINDIBLES',
+            'finales': 'FINALES DE PEONES',
+            'aperturas': 'APERTURAS BÁSICAS'
+        }
+        titulo_limpio = nombres_temas.get(id_tema, id_tema.upper())
+
+        # Inyección directa del título puro
+        self.ids.lbl_titulo_tema.text = f"[b]{titulo_limpio}[/b]"
+
         self.ids.grid_unidades.clear_widgets()
 
         perfil = self._obtener_perfil_activo()

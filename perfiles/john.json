@@ -12,6 +12,6 @@
     "escala_pop": 0,
     "victorias_100": 2,
     "progreso_escuela": {
-        "tac_01": true
+        "tac_01": false
     }
 }

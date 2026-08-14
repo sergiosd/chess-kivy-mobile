@@ -11,30 +11,43 @@
 <FilaUnidadEscuela>:
     orientation: 'horizontal'
     size_hint_y: None
-    height: dp(50)
+    height: dp(60)
+    padding: [dp(15), dp(5)]
     spacing: dp(10)
+
+    # Tarjeta Flotante (Card UI) para cada lección
     canvas.before:
         Color:
-            # Magia visual para iluminar la fila entera cuando el usuario pulsa sobre ella
-            rgba: (0.2, 0.4, 0.6, 0.8) if self.state == 'down' else (0.1, 0.1, 0.1, 0.2)
+            # Blanco semi-opaco, mutando a azulado al ser presionado
+            rgba: (0.9, 0.95, 1, 0.95) if self.state == 'down' else (0.98, 0.98, 0.98, 0.95)
         RoundedRectangle:
             pos: self.pos
             size: self.size
-            radius: [dp(8)]
+            radius: [dp(12)]
+
+        Color:
+            # Borde estructural cian
+            rgba: 0.2, 0.6, 0.8, 0.6
+        Line:
+            width: 1.2
+            rounded_rectangle: (self.x, self.y, self.width, self.height, dp(12))
 
     Label:
         text: root.texto_unidad
-        font_size: '14sp'
-        color: 1, 1, 1, 1
+        font_name: 'Michroma'
+        font_size: '16sp'
+        color: 0.1, 0.2, 0.3, 1
         halign: 'left'
         valign: 'middle'
         text_size: self.size
         padding_x: dp(10)
+        bold: True
 
     CheckBox:
         size_hint_x: 0.2
         active: root.completada
-        color: 0.2, 0.8, 0.4, 1
+        # Inyección de verde radiactivo para contrastar con el blanco
+        color: 0.1, 0.6, 0.2, 1
         on_active: root.al_alternar(self.active)
 
 <PantallaEscuelaTemas>:
@@ -93,8 +106,8 @@
 <PantallaEscuelaUnidades>:
     BoxLayout:
         orientation: 'vertical'
-        padding: dp(30)
-        spacing: dp(15)
+        padding: dp(25)
+        spacing: dp(20)
         canvas.before:
             Color:
                 rgba: 1, 1, 1, 1
@@ -107,26 +120,36 @@
             id: lbl_titulo_tema
             text: '[b]TEMA SELECCIONADO[/b]'
             markup: True
-            font_size: '20sp'
-            size_hint_y: 0.1
-            color: 0.9, 0.9, 0.9, 1
+            font_size: '22sp'
+            size_hint_y: 0.15
+            color: 0.1, 0.5, 0.6, 1
 
-        ScrollView:
-            size_hint_y: 0.7
-            GridLayout:
-                id: grid_unidades
-                cols: 1
-                spacing: dp(5)
-                size_hint_y: None
-                height: self.minimum_height
+        # Contenedor invisible organizador
+        BoxLayout:
+            orientation: 'vertical'
+            size_hint_y: 0.70
+            pos_hint: {'center_x': 0.5}
+            padding: dp(10)
+
+            ScrollView:
+                do_scroll_x: False
+                GridLayout:
+                    id: grid_unidades
+                    cols: 1
+                    spacing: dp(12)
+                    size_hint_y: None
+                    height: self.minimum_height
+                    padding: [dp(5), dp(10)]
 
         BoxLayout:
             size_hint_y: None
             height: dp(55)
             spacing: dp(15)
+            padding: [dp(25), dp(0)]
 
             Button:
                 text: 'VOLVER'
+                font_size: '14sp'
                 background_color: 0.8, 0.4, 0.1, 1
                 background_normal: 'assets/ui/button.png'
                 background_down: 'assets/ui/button_down.png'
@@ -136,6 +159,7 @@
 
             Button:
                 text: 'SIGUIENTE'
+                font_size: '14sp'
                 background_color: 0.2, 0.8, 0.4, 1
                 background_normal: 'assets/ui/button.png'
                 background_down: 'assets/ui/button_down.png'
