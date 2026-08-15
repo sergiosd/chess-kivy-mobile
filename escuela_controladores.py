@@ -1,6 +1,7 @@
 import os
 import math
 import chess
+import json
 from kivy.uix.screenmanager import Screen
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.behaviors import ButtonBehavior
@@ -24,28 +25,6 @@ class PantallaEscuelaUnidades(Screen):
     el contenido teórico leyendo archivos de texto del directorio 'lecciones'.
     """
 
-    TEMARIO = {
-        'tactica': [
-            ('tac_01', 'Introduccion a la tactica'),
-            ('tac_02', 'El ataque doble'),
-            ('tac_03', 'La clavada absoluta'),
-            ('tac_04', 'Descubiertas letales')
-        ],
-        'mates': [
-            ('mat_01', 'Mate del pasillo'),
-            ('mat_02', 'Beso de la muerte')
-        ],
-        'finales': [
-            ('fin_01', 'Oposicion basica'),
-            ('fin_02', 'Regla del cuadrado')
-        ]
-    }
-
-    # Mapa para enlazar el identificador interno con el archivo físico real
-    ARCHIVOS_LECCIONES = {
-        'tac_01': 'tactica_contenido.txt'
-    }
-
     def __init__(self, gestor_perfiles, **kwargs) -> None:
         """
         Prepara la pantalla inyectando la dependencia de acceso a disco duro.
@@ -56,6 +35,25 @@ class PantallaEscuelaUnidades(Screen):
         super().__init__(**kwargs)
         self.gestor_perfiles = gestor_perfiles
         self.tema_actual = ''
+        self.TEMARIO = {}
+        self.ARCHIVOS_LECCIONES = {}
+        self.cargar_datos_json()
+
+    def cargar_datos_json(self) -> None:
+        """
+        Inyecta el diccionario en memoria devorando el archivo JSON local.
+        """
+        ruta = os.path.join('lecciones', 'temario.json')
+        if os.path.exists(ruta):
+            with open(ruta, 'r', encoding='utf-8') as f:
+                try:
+                    datos = json.load(f)
+                    self.TEMARIO = datos.get('temario', {})
+                    self.ARCHIVOS_LECCIONES = datos.get('archivos', {})
+                except json.JSONDecodeError:
+                    print("ERROR: ¡Por el kernel panic! El JSON está corrupto.")
+        else:
+            print("ERROR: Archivo temario.json no encontrado en la raíz.")
 
     def cargar_tema(self, id_tema: str) -> None:
         """
@@ -123,27 +121,25 @@ class PantallaEscuelaUnidades(Screen):
 
     def abrir_visor(self, id_leccion: str, titulo: str) -> None:
         """
-        Localiza el archivo de texto asociado a la unidad y lo inyecta en el visor teórico.
-
-        Si el archivo no existe en el sistema de directorios inyecta un texto de error por defecto.
+        Localiza el archivo teórico anidado en el diccionario y lo inyecta en el visor.
 
         Args:
             id_leccion (str): Código interno de la lección.
-            titulo (str): Texto amigable que se mostrará en la cabecera de la interfaz.
+            titulo (str): Texto amigable de la cabecera.
         """
         app = App.get_running_app()
         pantalla_visor = app.sm.get_screen('escuela_visor')
 
-        nombre_archivo = self.ARCHIVOS_LECCIONES.get(id_leccion, f"{id_leccion}_contenido.txt")
-        ruta_archivo = os.path.join('lecciones', nombre_archivo)
+        datos_archivos = self.ARCHIVOS_LECCIONES.get(id_leccion, {})
+        nombre_archivo = datos_archivos.get("teoria", f"{id_leccion}_contenido.txt")
 
+        ruta_archivo = os.path.join('lecciones', nombre_archivo)
         texto = "Este papiro digital aún se está forjando. Vuelve más tarde."
 
         if os.path.exists(ruta_archivo):
             with open(ruta_archivo, 'r', encoding='utf-8') as archivo:
                 texto = archivo.read()
 
-        # Inyección brutal del ID para que el visor sepa exactamente qué lección está manipulando
         pantalla_visor.cargar_contenido(id_leccion, titulo, texto)
         app.sm.current = 'escuela_visor'
 
@@ -167,6 +163,58 @@ class PantallaEscuelaUnidades(Screen):
         if lecciones:
             self.abrir_visor(lecciones[0][0], lecciones[0][1])
 
+    def abrir_menu_leccion(self, id_leccion: str, titulo: str) -> None:
+        """
+        Redirige al submenú intermedio evaluando dinámicamente el diccionario JSON.
+
+        Args:
+            id_leccion (str): Código interno de la lección.
+            titulo (str): Texto amigable de la cabecera.
+        """
+        app = App.get_running_app()
+        pantalla_menu = app.sm.get_screen('menu_leccion')
+
+        titulo_tema_limpio = self.ids.lbl_titulo_tema.text.replace('[b]', '').replace('[/b]', '')
+
+        datos_archivos = self.ARCHIVOS_LECCIONES.get(id_leccion, {})
+
+        tiene_ejemplos = bool(datos_archivos.get("ejemplos"))
+        tiene_practica = bool(datos_archivos.get("practica"))
+
+        pantalla_menu.cargar_leccion(id_leccion, titulo, titulo_tema_limpio, tiene_ejemplos,
+                                     tiene_practica)
+        app.sm.current = 'menu_leccion'
+
+
+    def abrir_visor_teoria(self, id_leccion: str, titulo: str) -> None:
+        """
+        Localiza el archivo de texto asociado a la unidad y lo inyecta.
+
+        Args:
+            id_leccion (str): Código interno de la lección.
+            titulo (str): Texto amigable de la cabecera.
+        """
+        app = App.get_running_app()
+        pantalla_visor = app.sm.get_screen('escuela_visor')
+        nombre_dicc = self.ARCHIVOS_LECCIONES.get(id_leccion, f"{id_leccion}_contenido.txt")
+        nombre_archivo = nombre_dicc.get("teoria", f"{id_leccion}_contenido.txt")
+        ruta_archivo = os.path.join('lecciones', nombre_archivo)
+
+        texto = "Este papiro digital aún se está forjando. Vuelve más tarde."
+        if os.path.exists(ruta_archivo):
+            with open(ruta_archivo, 'r', encoding='utf-8') as archivo:
+                texto = archivo.read()
+
+        pantalla_visor.cargar_contenido(id_leccion, titulo, texto)
+        app.sm.current = 'escuela_visor'
+
+class FilaParteLeccion(ButtonBehavior, BoxLayout):
+    """
+    Componente físico para las opciones del menú de lección.
+    Reemplaza la inestable generación dinámica de Kivy.
+    """
+    texto_parte = StringProperty('')
+    completada = BooleanProperty(False)
 
 class FilaUnidadEscuela(ButtonBehavior, BoxLayout):
     """
@@ -191,10 +239,8 @@ class FilaUnidadEscuela(ButtonBehavior, BoxLayout):
         self.controlador.registrar_progreso(self.id_unidad, estado)
 
     def on_release(self) -> None:
-        """
-        Dispara la transición de pantalla al tocar cualquier parte de la fila.
-        """
-        self.controlador.abrir_visor(self.id_unidad, self.texto_unidad)
+        """Dispara la transición al menú intermedio al tocar la fila."""
+        self.controlador.abrir_menu_leccion(self.id_unidad, self.texto_unidad)
 
 
 class PantallaEscuelaTemas(Screen):
@@ -412,8 +458,8 @@ class PantallaVisorUnidad(Screen):
             self.mostrar_pagina()
 
     def volver_unidades(self) -> None:
-        """Ejecuta una retirada estratégica hacia el menú de unidades."""
-        App.get_running_app().sm.current = 'escuela_unidades'
+        """Ejecuta una retirada estratégica hacia el menú de disección de la lección."""
+        App.get_running_app().sm.current = 'menu_leccion'
 
     def _agregar_texto(self, contenedor, texto: str) -> None:
         """
@@ -547,4 +593,69 @@ class PantallaVisorUnidad(Screen):
 
     def volver_unidades(self) -> None:
         """Abandona la clase magistral y huye hacia el índice de unidades."""
+        App.get_running_app().sm.current = 'menu_leccion'
+
+
+class PantallaMenuLeccion(Screen):
+    """
+    Controlador gráfico para el submenú de una lección específica.
+
+    Actúa como un nodo de bifurcación dentro del patrón MVC. Presenta al
+    jugador las opciones de teoría, ejemplos y práctica aislando la
+    navegación del listado general de unidades.
+    """
+
+    def __init__(self, **kwargs) -> None:
+        """Inicializa las variables de estado en memoria."""
+        super().__init__(**kwargs)
+        self.id_leccion = ""
+        self.titulo_leccion = ""
+
+    def cargar_leccion(self, id_leccion: str, titulo: str, titulo_tema: str,
+                       tiene_ejemplos: bool = True, tiene_practica: bool = True) -> None:
+        """Forja las tarjetas (Card UI) y formatea el título con múltiples líneas."""
+        self.id_leccion = id_leccion
+        self.titulo_leccion = titulo
+
+        # Inyección del texto con jerarquía. Kivy envolverá esto gracias a nuestro KV.
+        texto_formateado = f"[b]{titulo_tema.upper()}\n[size=16sp]Leccion: {titulo}[/size][/b]"
+        self.ids.lbl_titulo_leccion.text = texto_formateado
+
+        contenedor = self.ids.grid_partes
+        contenedor.clear_widgets()
+
+        # Usamos tu maravillosa clase FilaParteLeccion en lugar de asquerosos Buttons
+        btn_teoria = FilaParteLeccion()
+        btn_teoria.texto_parte = "1. Teoría"
+        btn_teoria.bind(on_release=lambda x: self.abrir_teoria())
+        contenedor.add_widget(btn_teoria)
+
+        if tiene_ejemplos:
+            btn_ejemplos = FilaParteLeccion()
+            btn_ejemplos.texto_parte = "2. Ejemplos"
+            btn_ejemplos.bind(on_release=lambda x: self.abrir_ejemplos())
+            contenedor.add_widget(btn_ejemplos)
+
+        if tiene_practica:
+            btn_practica = FilaParteLeccion()
+            btn_practica.texto_parte = "3. Práctica"
+            btn_practica.bind(on_release=lambda x: self.abrir_practica())
+            contenedor.add_widget(btn_practica)
+
+    def abrir_teoria(self) -> None:
+        """Fuerza la lectura del contenido teórico redirigiendo al visor."""
+        app = App.get_running_app()
+        pantalla_unidades = app.sm.get_screen('escuela_unidades')
+        pantalla_unidades.abrir_visor_teoria(self.id_leccion, self.titulo_leccion)
+
+    def abrir_ejemplos(self) -> None:
+        """Despliega la simulación interactiva de patrones tácticos."""
+        print("Stub: Cargar minitableros interactivos de ejemplos")
+
+    def abrir_practica(self) -> None:
+        """Lanza los desafíos evaluables de la unidad actual."""
+        print("Stub: Cargar motor de validación de práctica")
+
+    def volver_unidades(self) -> None:
+        """Ejecuta un retroceso forzado hacia el listado del temario."""
         App.get_running_app().sm.current = 'escuela_unidades'

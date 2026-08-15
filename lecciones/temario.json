@@ -1,0 +1,28 @@
+{
+    "temario": {
+        "tactica": [
+            ["tac_01", "Introduccion a la tactica"],
+            ["tac_02", "El ataque doble"]
+        ],
+        "mates": [
+            ["mat_01", "Mate del pasillo"],
+            ["mat_02", "Beso de la muerte"]
+        ],
+        "finales": [
+            ["fin_01", "Oposicion basica"],
+            ["fin_02", "Regla del cuadrado"]
+        ]
+    },
+    "archivos": {
+        "tac_01": {
+            "teoria": "tactica_introduccion_teoria.txt",
+            "ejemplos": "tactica_ejemplos.txt",
+            "practica": null
+        },
+        "tac_02": {
+            "teoria": null,
+            "ejemplos": null,
+            "practica": null
+        }
+    }
+}

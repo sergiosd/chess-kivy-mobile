@@ -1355,6 +1355,11 @@ class ChessApp(App):
         )
         self.sm.add_widget(pantalla_escuela_unidades)
 
+        # 9. Controlador del submenú de disección de lecciones
+        from escuela_controladores import PantallaMenuLeccion
+        pantalla_menu = PantallaMenuLeccion(name='menu_leccion')
+        self.sm.add_widget(pantalla_menu)
+
         # Visor Teórico de Unidades (La cura definitiva para tu error)
         pantalla_visor = PantallaVisorUnidad(name='escuela_visor')
         self.sm.add_widget(pantalla_visor)

@@ -337,3 +337,108 @@
         halign: 'center'
         valign: 'middle'
         bold: True
+
+<PantallaMenuLeccion>:
+    BoxLayout:
+        orientation: 'vertical'
+        padding: dp(25)
+        spacing: dp(20)
+        canvas.before:
+            Color:
+                rgba: 1, 1, 1, 1
+            Rectangle:
+                pos: self.pos
+                size: self.size
+                source: 'assets/ui/bg_3.png'
+
+        # El título obligado a acatar los saltos de línea y centrarse
+        Label:
+            id: lbl_titulo_leccion
+            text: ''
+            markup: True
+            halign: 'center'
+            valign: 'middle'
+            font_size: '22sp'
+            color: 0.1, 0.5, 0.6, 1
+            # Magia negra para el word-wrap
+            size_hint_y: None
+            text_size: self.width, None
+            height: self.texture_size[1] + dp(20)
+
+        # Contenedor de las tarjetas anclado a la parte superior
+        BoxLayout:
+            orientation: 'vertical'
+            size_hint_y: 1
+            pos_hint: {'center_x': 0.5}
+            padding: dp(10)
+
+            ScrollView:
+                do_scroll_x: False
+                size_hint_y: None
+                height: grid_partes.minimum_height
+
+                GridLayout:
+                    id: grid_partes
+                    cols: 1
+                    spacing: dp(15)
+                    size_hint_y: None
+                    height: self.minimum_height
+                    padding: [dp(5), dp(10)]
+
+            # Este Widget vacío es el verdugo que empuja todo hacia arriba
+            Widget:
+                size_hint_y: 1
+
+        # Botón inferior para retroceder
+        BoxLayout:
+            size_hint_y: None
+            height: dp(55)
+            spacing: dp(15)
+            padding: [dp(25), dp(0)]
+
+            Button:
+                text: 'VOLVER'
+                font_size: '14sp'
+                background_color: 0.8, 0.4, 0.1, 1
+                background_normal: 'assets/ui/button.png'
+                background_down: 'assets/ui/button_down.png'
+                border: 0, 0, 0, 0
+                bold: True
+                on_release: root.volver_unidades()
+
+<FilaParteLeccion>:
+    orientation: 'horizontal'
+    size_hint_y: None
+    height: dp(60)
+    padding: [dp(15), dp(5)]
+    spacing: dp(10)
+
+    canvas.before:
+        Color:
+            rgba: (0.9, 0.95, 1, 0.95) if self.state == 'down' else (0.98, 0.98, 0.98, 0.95)
+        RoundedRectangle:
+            pos: self.pos
+            size: self.size
+            radius: [dp(12)]
+        Color:
+            rgba: 0.2, 0.6, 0.8, 0.6
+        Line:
+            width: 1.2
+            rounded_rectangle: (self.x, self.y, self.width, self.height, dp(12))
+
+    Label:
+        text: root.texto_parte
+        font_name: 'Michroma'
+        font_size: '16sp'
+        color: 0.1, 0.2, 0.3, 1
+        halign: 'left'
+        valign: 'middle'
+        text_size: self.size
+        padding_x: dp(10)
+        bold: True
+
+    CheckBox:
+        size_hint_x: 0.2
+        active: root.completada
+        color: 0.1, 0.6, 0.2, 1
+        disabled: True
