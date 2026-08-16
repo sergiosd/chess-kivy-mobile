@@ -40,7 +40,10 @@
         halign: 'left'
         valign: 'middle'
         text_size: self.size
-        padding_x: dp(10)
+
+        # ¡La guillotina del warning! Unificamos el padding horizontal (10) y vertical (0)
+        padding: [dp(10), 0]
+
         bold: True
 
     CheckBox:
@@ -434,7 +437,7 @@
         halign: 'left'
         valign: 'middle'
         text_size: self.size
-        padding_x: dp(10)
+        padding: [dp(10), 0]
         bold: True
 
     CheckBox:
