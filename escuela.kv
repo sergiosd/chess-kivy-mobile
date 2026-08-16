@@ -442,3 +442,75 @@
         active: root.completada
         color: 0.1, 0.6, 0.2, 1
         disabled: True
+
+<VistaLeccion>:
+    orientation: 'vertical'
+    padding: dp(20)
+    spacing: dp(15)
+    canvas.before:
+        Color:
+            rgba: 0.12, 0.29, 0.42, 1
+        Rectangle:
+            pos: self.pos
+            size: self.size
+
+    Label:
+        text: '[b]ENTRENAMIENTO TACTICO[/b]'
+        font_size: '22sp'
+        markup: True
+        bold: True
+        size_hint_y: 0.15
+        color: 0.2, 0.8, 0.4, 1
+
+    AnchorLayout:
+        size_hint_y: 0.55
+        BoxLayout:
+            size_hint: None, None
+            width: cuadricula_tablero.width + dp(4)
+            height: cuadricula_tablero.height + dp(4)
+            canvas.before:
+                Color:
+                    rgba: 0.8, 0.6, 0.1, 1
+                Line:
+                    width: 1.5
+                    rectangle: self.x, self.y, self.width, self.height
+            GridLayout:
+                id: cuadricula_tablero
+                cols: 8
+                rows: 8
+                size_hint: None, None
+                width: min(root.width - dp(40), root.height * 0.55)
+                height: self.width
+
+    BoxLayout:
+        orientation: 'vertical'
+        size_hint_y: 0.30
+        spacing: dp(10)
+
+        Label:
+            id: lbl_estado
+            text: 'Analiza la posicion...'
+            font_size: '14sp'
+            bold: True
+            markup: True
+            color: 0.9, 0.9, 0.9, 1
+            text_size: self.size
+            halign: 'center'
+            valign: 'middle'
+
+        Button:
+            id: btn_continuar
+            text: 'SIGUIENTE'
+            size_hint_x: None
+            width: dp(160)
+            pos_hint: {'center_x': 0.5}
+            size_hint_y: None
+            height: dp(50)
+            background_color: 0.2, 0.6, 0.8, 1
+            background_normal: 'assets/ui/button.png'
+            background_down: 'assets/ui/button_down.png'
+            border: 0, 0, 0, 0
+            bold: True
+            opacity: 0
+            disabled: True
+            on_release: root.retornar_visor()

@@ -4,16 +4,20 @@ import chess
 import json
 from kivy.uix.screenmanager import Screen
 from kivy.uix.boxlayout import BoxLayout
+from kivy.uix.gridlayout import GridLayout
 from kivy.uix.behaviors import ButtonBehavior
-from kivy.properties import StringProperty, BooleanProperty
-from kivy.app import App
-from kivy.factory import Factory
+from kivy.uix.button import Button
 from kivy.uix.image import Image
 from kivy.uix.relativelayout import RelativeLayout
 from kivy.uix.anchorlayout import AnchorLayout
+from kivy.properties import StringProperty, BooleanProperty
+from kivy.app import App
+from kivy.factory import Factory
 from kivy.metrics import dp
 from kivy.graphics import Color, Rectangle, Line, Triangle
 from kivy.clock import Clock
+
+
 
 
 class PantallaEscuelaUnidades(Screen):
@@ -383,15 +387,11 @@ class PantallaVisorUnidad(Screen):
 
     def cargar_contenido(self, id_leccion: str, titulo: str, texto: str) -> None:
         """
-        Aniquila el texto crudo y construye la lista de páginas lógicas.
+        Disecciona el papiro digital separando teoría, tácticas y mensajes de feedback.
 
-        Usa el delimitador [PAGINA] para estructurar la lectura de forma independiente
-        al contenido táctico.
-
-        Args:
-            id_leccion (str): Identificador único para registrar progreso.
-            titulo (str): Encabezado de la lección.
-            texto (str): Contenido completo cargado desde el disco.
+        Escanea implacablemente buscando las etiquetas de resolución.
+        Frena el análisis al detectar el ancla [FIN] para reanudar el flujo
+        normal de la lección sin contaminar la interfaz.
         """
         self.id_leccion_actual = id_leccion
         self.ids.lbl_titulo.text = f"[b]{titulo.upper()}[/b]"
@@ -401,17 +401,63 @@ class PantallaVisorUnidad(Screen):
         partes_pagina = texto.split('[PAGINA]')
 
         for bloque in partes_pagina:
-            if bloque.strip():
-                self.paginas.append(bloque.strip())
+            if '[PUZZLE]' in bloque:
+                texto_antes, resto = bloque.split('[PUZZLE]', 1)
+                inicio_fen = resto.find('[FEN:')
+                fin_fen = resto.find(']', inicio_fen)
+
+                if inicio_fen != -1 and fin_fen != -1:
+                    datos_puzzle = resto[inicio_fen + 5:fin_fen]
+                    texto_teoria = resto[fin_fen + 1:].strip()
+
+                    msg_correcto = "¡MAGISTRAL! Lección dominada."
+                    msg_error = "¡ERROR FATAL! Repasa la teoría."
+
+                    if '[CORRECTO]' in texto_teoria:
+                        b_izq, b_der = texto_teoria.split('[CORRECTO]', 1)
+                        texto_teoria = b_izq
+
+                        if '[ERROR]' in b_der:
+                            t_corr, t_err_resto = b_der.split('[ERROR]', 1)
+                            msg_correcto = t_corr.strip()
+
+                            if '[FIN]' in t_err_resto:
+                                tramos_err = t_err_resto.split('[FIN]', 1)
+                                msg_error = tramos_err[0].strip()
+                                texto_teoria += '\n\n' + tramos_err[1].strip()
+                            else:
+                                msg_error = t_err_resto.strip()
+                        else:
+                            if '[FIN]' in b_der:
+                                tramos_corr = b_der.split('[FIN]', 1)
+                                msg_correcto = tramos_corr[0].strip()
+                                texto_teoria += '\n\n' + tramos_corr[1].strip()
+                            else:
+                                msg_correcto = b_der.strip()
+
+                    self.paginas.append({
+                        'texto': texto_antes.strip(),
+                        'puzzle': datos_puzzle,
+                        'msg_correcto': msg_correcto,
+                        'msg_error': msg_error
+                    })
+
+                    if texto_teoria:
+                        self.paginas.append({'texto': texto_teoria, 'puzzle': None})
+                else:
+                    self.paginas.append({'texto': bloque.strip(), 'puzzle': None})
+            else:
+                if bloque.strip():
+                    self.paginas.append({'texto': bloque.strip(), 'puzzle': None})
 
         self.mostrar_pagina()
 
     def mostrar_pagina(self) -> None:
         """
-        Limpia el lienzo e inyecta el contenido exclusivo de la página actual.
+        Renderiza la página actual destruyendo los widgets previos.
 
-        Analiza el texto activo buscando etiquetas FEN para intercalar
-        dinámicamente los minitableros y el texto.
+        Inyecta el fragmento teórico en el contenedor visual. Detecta los tableros
+        estáticos residuales para mantener la retrocompatibilidad del formato FEN.
         """
         if not self.paginas:
             return
@@ -419,7 +465,8 @@ class PantallaVisorUnidad(Screen):
         contenedor = self.ids.contenedor_contenido
         contenedor.clear_widgets()
 
-        texto_pagina = self.paginas[self.indice_pagina]
+        pagina_actual = self.paginas[self.indice_pagina]
+        texto_pagina = pagina_actual['texto']
         partes = texto_pagina.split('[FEN:')
 
         for i, bloque in enumerate(partes):
@@ -429,13 +476,9 @@ class PantallaVisorUnidad(Screen):
             else:
                 subpartes = bloque.split(']', 1)
                 if len(subpartes) == 2:
-                    codigo_fen = subpartes[0].strip()
-                    resto_texto = subpartes[1].strip()
-
-                    self._agregar_minitablero(contenedor, codigo_fen)
-
-                    if resto_texto.strip():
-                        self._agregar_texto(contenedor, resto_texto.strip())
+                    self._agregar_minitablero(contenedor, subpartes[0].strip())
+                    if subpartes[1].strip():
+                        self._agregar_texto(contenedor, subpartes[1].strip())
 
         if self.indice_pagina == len(self.paginas) - 1 and self.id_leccion_actual:
             app = App.get_running_app()
@@ -450,12 +493,23 @@ class PantallaVisorUnidad(Screen):
 
     def pagina_siguiente(self) -> None:
         """
-        Avanza devorando el conocimiento teórico.
-        Si ya está en la última página, ignora la pulsación.
+        Avanza en el temario o detona la emboscada táctica interactiva.
+
+        Verifica si el diccionario activo contiene un puzle cargado. Si es así,
+        inyecta los mensajes de feedback dinámicos hacia el motor principal.
         """
-        if self.indice_pagina < len(self.paginas) - 1:
-            self.indice_pagina += 1
-            self.mostrar_pagina()
+        pagina_actual = self.paginas[self.indice_pagina]
+
+        if pagina_actual.get('puzzle'):
+            self.lanzar_puzzle_leccion(
+                pagina_actual['puzzle'],
+                pagina_actual.get('msg_correcto', '¡MAGISTRAL! Leccion dominada.'),
+                pagina_actual.get('msg_error', '¡ERROR FATAL! Repasa la teoria.')
+            )
+        else:
+            if self.indice_pagina < len(self.paginas) - 1:
+                self.indice_pagina += 1
+                self.mostrar_pagina()
 
     def volver_unidades(self) -> None:
         """Ejecuta una retirada estratégica hacia el menú de disección de la lección."""
@@ -475,12 +529,11 @@ class PantallaVisorUnidad(Screen):
 
     def _agregar_minitablero(self, contenedor, bloque_datos: str) -> None:
         """
-        Invoca la construcción del tablero, procesando el código FEN y dibujando vectores dinámicos.
+        Materializa tableros vivos o estáticos respetando las anotaciones geométricas.
 
-        Trocea la etiqueta inyectada buscando los delimitadores '|'. Interpreta los
-        comandos 'C:' para colorear escaques y 'A:' para disparar flechas. Ataca
-        directamente al Canvas post-renderizado (after) de Kivy, vinculando la
-        geometría a los eventos de redimensionamiento para evitar desajustes asquerosos.
+        Trocea la etiqueta buscando FEN, flechas y comandos de interactividad.
+        Si encuentra la directiva SOL, delega el control de la cuadrícula al
+        controlador interactivo.
 
         Args:
             contenedor (BoxLayout): El padre gráfico que devorará el minitablero.
@@ -495,18 +548,16 @@ class PantallaVisorUnidad(Screen):
             'K': 'assets/pieces/blanco_rey.png', 'k': 'assets/pieces/negro_rey.png'
         }
 
-        # 1. El bisturí del parser extrae el FEN puro y los comandos extra
         tramos = bloque_datos.split('|')
         fen_real = tramos[0].strip()
 
         colores_casillas = []
         flechas_vectores = []
+        solucion_uci = []
 
-        # Paletas RGBA (Verde táctico y Rojo hemorragia)
         mapa_resaltes = {'g': (0.2, 0.8, 0.2, 0.5), 'r': (0.8, 0.2, 0.2, 0.5)}
         mapa_lineas = {'g': (0.2, 0.8, 0.2, 0.85), 'r': (0.8, 0.2, 0.2, 0.85)}
 
-        # 2. Descuartizamos los argumentos extra
         for tramo in tramos[1:]:
             tramo = tramo.strip()
             if tramo.startswith('C:'):
@@ -514,9 +565,7 @@ class PantallaVisorUnidad(Screen):
                 for d in datos:
                     if '-' in d:
                         cas, c = d.strip().split('-')
-                        colores_casillas.append((cas.strip(), mapa_resaltes.get(c.strip().lower(),
-                                                                                (0.2, 0.8, 0.2,
-                                                                                 0.5))))
+                        colores_casillas.append((cas.strip(), mapa_resaltes.get(c.strip().lower(), (0.2, 0.8, 0.2, 0.5))))
             elif tramo.startswith('A:'):
                 datos = tramo[2:].split(',')
                 for d in datos:
@@ -524,30 +573,30 @@ class PantallaVisorUnidad(Screen):
                         mov, c = d.strip().split('-')
                         mov = mov.strip()
                         if len(mov) >= 4:
-                            flechas_vectores.append((mov[:2], mov[2:4],
-                                                     mapa_lineas.get(c.strip().lower(),
-                                                                     (0.2, 0.8, 0.2, 0.85))))
+                            flechas_vectores.append((mov[:2], mov[2:4], mapa_lineas.get(c.strip().lower(), (0.2, 0.8, 0.2, 0.85))))
+            elif tramo.startswith('SOL:'):
+                datos = tramo[4:].split(',')
+                solucion_uci = [mov.strip() for mov in datos if mov.strip()]
 
         envoltorio = Factory.ContenedorTableroMini()
         cuadricula = envoltorio.ids.grid
 
-        # 3. Ensamblaje del tablero estático subyacente
         try:
-            tablero = chess.Board(fen_real)
-            for fila in range(7, -1, -1):
-                for col in range(8):
-                    es_clara = (fila + col) % 2 != 0
-                    pieza = tablero.piece_at(chess.square(col, fila))
-                    ruta_pieza = mapa_imagenes.get(pieza.symbol(), '') if pieza else ''
-                    cuadricula.add_widget(CasillaMini(es_clara, ruta_pieza))
-
+            if solucion_uci:
+                ControladorMiniInteractivo(cuadricula, fen_real, solucion_uci)
+            else:
+                tablero = chess.Board(fen_real)
+                for fila in range(7, -1, -1):
+                    for col in range(8):
+                        es_clara = (fila + col) % 2 != 0
+                        pieza = tablero.piece_at(chess.square(col, fila))
+                        ruta_pieza = mapa_imagenes.get(pieza.symbol(), '') if pieza else ''
+                        cuadricula.add_widget(CasillaMini(es_clara, ruta_pieza))
             contenedor.add_widget(envoltorio)
         except ValueError:
-            self._agregar_texto(contenedor,
-                                f"[color=#ff0000]ERROR: FEN inválido o corrupto ({fen_real})[/color]")
+            self._agregar_texto(contenedor, f"[color=#ff0000]ERROR: FEN inválido o corrupto ({fen_real})[/color]")
             return
 
-        # 4. Inyección de la brujería geométrica en el Canvas
         def redibujar_anotaciones(instancia, valor) -> None:
             """Callback forzado que recalcula los píxeles absolutos cuando Kivy respira."""
             instancia.canvas.after.clear()
@@ -555,16 +604,13 @@ class PantallaVisorUnidad(Screen):
                 sq_w = instancia.width / 8.0
                 sq_h = instancia.height / 8.0
 
-                # Pintando los mosaicos
                 for cas, col_rgba in colores_casillas:
                     idx = chess.parse_square(cas)
                     f = chess.square_file(idx)
                     r = chess.square_rank(idx)
                     Color(*col_rgba)
-                    Rectangle(pos=(instancia.x + f * sq_w, instancia.y + r * sq_h),
-                              size=(sq_w, sq_h))
+                    Rectangle(pos=(instancia.x + f * sq_w, instancia.y + r * sq_h), size=(sq_w, sq_h))
 
-                # Trazando la balística de las flechas
                 for origen, destino, col_rgba in flechas_vectores:
                     idx_o = chess.parse_square(origen)
                     idx_d = chess.parse_square(destino)
@@ -577,17 +623,13 @@ class PantallaVisorUnidad(Screen):
                     Color(*col_rgba)
                     Line(points=[x1, y1, x2, y2], width=dp(3))
 
-                    # Forjando la mortífera punta del vector
                     angulo = math.atan2(y2 - y1, x2 - x1)
                     l_punta = dp(14)
                     p1 = (x2, y2)
-                    p2 = (x2 - l_punta * math.cos(angulo - math.pi / 6.0),
-                          y2 - l_punta * math.sin(angulo - math.pi / 6.0))
-                    p3 = (x2 - l_punta * math.cos(angulo + math.pi / 6.0),
-                          y2 - l_punta * math.sin(angulo + math.pi / 6.0))
+                    p2 = (x2 - l_punta * math.cos(angulo - math.pi / 6.0), y2 - l_punta * math.sin(angulo - math.pi / 6.0))
+                    p3 = (x2 - l_punta * math.cos(angulo + math.pi / 6.0), y2 - l_punta * math.sin(angulo + math.pi / 6.0))
                     Triangle(points=[p1[0], p1[1], p2[0], p2[1], p3[0], p3[1]])
 
-        # 5. Atamos el callback a las entrañas inestables del diseño de Kivy
         cuadricula.bind(pos=redibujar_anotaciones, size=redibujar_anotaciones)
         Clock.schedule_once(lambda dt: redibujar_anotaciones(cuadricula, None), 0.1)
 
@@ -595,6 +637,293 @@ class PantallaVisorUnidad(Screen):
         """Abandona la clase magistral y huye hacia el índice de unidades."""
         App.get_running_app().sm.current = 'menu_leccion'
 
+    def lanzar_puzzle_leccion(self, datos_puzzle: str, msg_correcto: str, msg_error: str) -> None:
+        """
+        Inyecta los datos de la lección y despliega la interfaz educativa aséptica.
+
+        Transfiere los mensajes de texto personalizados al Factory de Kivy para
+        que la vista visualice el feedback exacto redactado en el archivo.
+
+        Args:
+            datos_puzzle (str): El fragmento de texto extraído con el FEN.
+            msg_correcto (str): Texto a mostrar en caso de acierto.
+            msg_error (str): Texto a mostrar si el usuario falla.
+        """
+        from kivy.app import App
+        from kivy.factory import Factory
+
+        tramos = datos_puzzle.split('|SOL:')
+        fen = tramos[0].strip()
+        solucion = tramos[1].strip().split(',') if len(tramos) > 1 else []
+
+        app = App.get_running_app()
+        app.modo_leccion = True
+
+        puzzle_dict = {
+            'fen': fen,
+            'moves': solucion,
+            'id': 'Leccion',
+            'rating': '--',
+            'popularity': '--',
+            'themes': ''
+        }
+
+        app.gestor_ajedrez.cargar_puzzle(puzzle_dict)
+
+        pantalla = app.sm.get_screen('pantalla_leccion')
+        pantalla.clear_widgets()
+
+        vista = Factory.VistaLeccion(
+            gestor_ajedrez=app.gestor_ajedrez,
+            msg_correcto=msg_correcto,
+            msg_error=msg_error
+        )
+        pantalla.add_widget(vista)
+
+        app.sm.current = 'pantalla_leccion'
+
+
+class CasillaInteractivaLeccion(ButtonBehavior, RelativeLayout):
+    """
+    Componente visual microscópico y táctil para resolver tácticas.
+
+    A diferencia de su hermana inerte, esta clase procesa eventos físicos
+    y permite modificar su textura PNG en tiempo real.
+    """
+
+    def __init__(self, nombre_casilla: str, controlador, es_clara: bool, ruta_pieza: str,
+                 **kwargs) -> None:
+        """
+        Inicializa la celda y posiciona sus capas visuales.
+
+        Args:
+            nombre_casilla (str): Coordenada alfanumérica pura.
+            controlador (ControladorMiniInteractivo): El cerebro que valida la táctica.
+            es_clara (bool): Determina el color del mosaico de fondo.
+            ruta_pieza (str): Ruta local del archivo gráfico de la pieza.
+        """
+        super().__init__(**kwargs)
+        self.nombre_casilla = nombre_casilla
+        self.controlador = controlador
+
+        ruta_fondo = "assets/squares/casilla_clara.png" if es_clara else "assets/squares/casilla_oscura.png"
+        self.add_widget(Image(source=ruta_fondo, allow_stretch=True, keep_ratio=False))
+
+        self.img_pieza = Image(source=ruta_pieza, fit_mode='contain', size_hint=(0.85, 0.85),
+                               pos_hint={'center_x': 0.5, 'center_y': 0.5})
+        self.add_widget(self.img_pieza)
+
+    def on_press(self) -> None:
+        """Captura la agresión física contra la pantalla y avisa al orquestador."""
+        self.controlador.procesar_toque(self.nombre_casilla)
+
+    def actualizar_imagen(self, ruta: str) -> None:
+        """Reemplaza la textura visual de la pieza instantáneamente."""
+        self.img_pieza.source = ruta
+
+
+class TableroInteractivoLeccion(GridLayout):
+    """
+    Controlador autónomo del mini-tablero incrustado en el texto.
+
+    Mantiene su propia instancia del Modelo (chess.Board) y compara
+    las pulsaciones del usuario con la solución estricta.
+    """
+
+    def __init__(self, fen_inicial: str, solucion_uci: list, **kwargs):
+        """
+        Ensambla el motor lógico y renderiza la cuadrícula.
+
+        Args:
+            fen_inicial (str): Disposición de las piezas.
+            solucion_uci (list): Movimientos esperados en notación UCI.
+        """
+        super().__init__(**kwargs)
+        self.cols = 8
+        self.rows = 8
+        self.size_hint = (None, None)
+        self.width = dp(320)
+        self.height = dp(320)
+
+        self.board = chess.Board(fen_inicial)
+        self.solucion = solucion_uci
+        self.paso_actual = 0
+        self.casilla_seleccionada = None
+        self.diccionario_casillas = {}
+
+        self.mapa_imagenes = {
+            'P': 'assets/pieces/blanco_peon.png', 'p': 'assets/pieces/negro_peon.png',
+            'N': 'assets/pieces/blanco_caballo.png', 'n': 'assets/pieces/negro_caballo.png',
+            'B': 'assets/pieces/blanco_alfil.png', 'b': 'assets/pieces/negro_alfil.png',
+            'R': 'assets/pieces/blanco_torre.png', 'r': 'assets/pieces/negro_torre.png',
+            'Q': 'assets/pieces/blanco_reina.png', 'q': 'assets/pieces/negro_reina.png',
+            'K': 'assets/pieces/blanco_rey.png', 'k': 'assets/pieces/negro_rey.png'
+        }
+
+        self.construir_cuadricula()
+        self.actualizar_piezas()
+
+    def construir_cuadricula(self) -> None:
+        """Inyecta los 64 widgets en la memoria del layout."""
+        for fila in range(7, -1, -1):
+            for col in range(8):
+                nombre = chess.square_name(chess.square(col, fila))
+                es_clara = (fila + col) % 2 != 0
+                casilla = CasillaInteractivaLeccion(nombre, self, es_clara)
+                self.diccionario_casillas[nombre] = casilla
+                self.add_widget(casilla)
+
+    def actualizar_piezas(self) -> None:
+        """Fuerza la sincronización de los sprites PNG con la matriz lógica."""
+        for nombre, widget in self.diccionario_casillas.items():
+            pieza = self.board.piece_at(chess.parse_square(nombre))
+            widget.img_pieza.source = self.mapa_imagenes.get(pieza.symbol(), '') if pieza else ''
+
+    def procesar_toque(self, nombre_casilla: str) -> None:
+        """
+        Cruza la interacción humana con la secuencia perfecta.
+
+        Args:
+            nombre_casilla (str): El escaque profanado por el usuario.
+        """
+        if self.paso_actual >= len(self.solucion):
+            return
+
+        if self.casilla_seleccionada:
+            movimiento_intento = self.casilla_seleccionada + nombre_casilla
+            movimiento_esperado = self.solucion[self.paso_actual]
+
+            if movimiento_intento == movimiento_esperado[:4]:
+                move = chess.Move.from_uci(movimiento_esperado)
+                if move in self.board.legal_moves:
+                    self.board.push(move)
+                    self.paso_actual += 1
+                    self.actualizar_piezas()
+                    self.casilla_seleccionada = None
+
+                    # Llamada a Kivy para colorear de verde y dar feedback al usuario
+                    print("¡Movimiento Magistral!")
+                    Clock.schedule_once(self.respuesta_enemiga, 0.6)
+                    return
+
+            self.casilla_seleccionada = None
+            print("¡Error fatal! Intenta de nuevo.")
+        else:
+            pieza = self.board.piece_at(chess.parse_square(nombre_casilla))
+            if pieza and pieza.color == self.board.turn:
+                self.casilla_seleccionada = nombre_casilla
+
+    def respuesta_enemiga(self, dt: float) -> None:
+        """
+        Devuelve el golpe ejecutando el siguiente movimiento de la lista.
+
+        Args:
+            dt (float): Basura inyectada por el Clock de Kivy.
+        """
+        if self.paso_actual < len(self.solucion):
+            movimiento_esperado = self.solucion[self.paso_actual]
+            self.board.push(chess.Move.from_uci(movimiento_esperado))
+            self.paso_actual += 1
+            self.actualizar_piezas()
+
+
+class ControladorMiniInteractivo:
+    """
+    Orquesta la lógica de un tablero táctil incrustado en la teoría.
+
+    Se acopla a un GridLayout de Kivy ya existente. Lo vacía y lo rellena
+    con celdas interactivas respetando el flujo de la lección.
+    """
+
+    def __init__(self, cuadricula, fen_inicial: str, solucion_uci: list) -> None:
+        """
+        Prepara el motor lógico y renderiza la cuadricula viva.
+
+        Args:
+            cuadricula (GridLayout): El contenedor vacío de Kivy.
+            fen_inicial (str): Disposición matemática de las piezas.
+            solucion_uci (list): Movimientos ganadores requeridos.
+        """
+        self.cuadricula = cuadricula
+        self.board = chess.Board(fen_inicial)
+        self.solucion = solucion_uci
+        self.paso_actual = 0
+        self.casilla_seleccionada = None
+        self.diccionario_casillas = {}
+
+        self.mapa_imagenes = {
+            'P': 'assets/pieces/blanco_peon.png', 'p': 'assets/pieces/negro_peon.png',
+            'N': 'assets/pieces/blanco_caballo.png', 'n': 'assets/pieces/negro_caballo.png',
+            'B': 'assets/pieces/blanco_alfil.png', 'b': 'assets/pieces/negro_alfil.png',
+            'R': 'assets/pieces/blanco_torre.png', 'r': 'assets/pieces/negro_torre.png',
+            'Q': 'assets/pieces/blanco_reina.png', 'q': 'assets/pieces/negro_reina.png',
+            'K': 'assets/pieces/blanco_rey.png', 'k': 'assets/pieces/negro_rey.png'
+        }
+        self.construir_cuadricula()
+
+    def construir_cuadricula(self) -> None:
+        """Inyecta los widgets interactivos dentro de la jaula gráfica."""
+        self.cuadricula.clear_widgets()
+        for fila in range(7, -1, -1):
+            for col in range(8):
+                nombre = chess.square_name(chess.square(col, fila))
+                es_clara = (fila + col) % 2 != 0
+                pieza = self.board.piece_at(chess.square(col, fila))
+                ruta_pieza = self.mapa_imagenes.get(pieza.symbol(), '') if pieza else ''
+
+                casilla = CasillaInteractivaLeccion(nombre, self, es_clara, ruta_pieza)
+                self.diccionario_casillas[nombre] = casilla
+                self.cuadricula.add_widget(casilla)
+
+    def procesar_toque(self, nombre_casilla: str) -> None:
+        """
+        Cruza la interacción humana con la secuencia perfecta.
+
+        Args:
+            nombre_casilla (str): El escaque profanado por el jugador.
+        """
+        if self.paso_actual >= len(self.solucion):
+            return
+
+        if self.casilla_seleccionada:
+            movimiento_intento = self.casilla_seleccionada + nombre_casilla
+            movimiento_esperado = self.solucion[self.paso_actual]
+
+            if movimiento_intento == movimiento_esperado[:4]:
+                move = chess.Move.from_uci(movimiento_esperado)
+                if move in self.board.legal_moves:
+                    self.board.push(move)
+                    self.paso_actual += 1
+                    self.actualizar_piezas()
+                    self.casilla_seleccionada = None
+                    Clock.schedule_once(self.respuesta_enemiga, 0.6)
+                    return
+
+            self.casilla_seleccionada = None
+        else:
+            pieza = self.board.piece_at(chess.parse_square(nombre_casilla))
+            if pieza and pieza.color == self.board.turn:
+                self.casilla_seleccionada = nombre_casilla
+
+    def actualizar_piezas(self) -> None:
+        """Fuerza la sincronización de los sprites PNG con la matriz lógica."""
+        for nombre, widget in self.diccionario_casillas.items():
+            pieza = self.board.piece_at(chess.parse_square(nombre))
+            ruta = self.mapa_imagenes.get(pieza.symbol(), '') if pieza else ''
+            widget.actualizar_imagen(ruta)
+
+    def respuesta_enemiga(self, dt: float) -> None:
+        """
+        Devuelve el golpe ejecutando el siguiente movimiento de la lista.
+
+        Args:
+            dt (float): Basura inyectada por el Clock de Kivy.
+        """
+        if self.paso_actual < len(self.solucion):
+            movimiento_esperado = self.solucion[self.paso_actual]
+            self.board.push(chess.Move.from_uci(movimiento_esperado))
+            self.paso_actual += 1
+            self.actualizar_piezas()
 
 class PantallaMenuLeccion(Screen):
     """

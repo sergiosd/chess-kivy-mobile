@@ -1,0 +1,15 @@
+Bienvenido a la masacre táctica.
+[PAGINA]
+Aquí presenciarás el mate del pasillo. Juegan las blancas.
+[PUZZLE][FEN:6k1/5ppp/8/8/8/8/5PPP/R5K1 w - - 0 1|SOL:a1a8][CORRECTO]Correcto, el mate del pasillo es muy popular![ERROR]No, se debia haber movido la torre para efectuar un jaque mate[FIN]
+El ataque doble es uno de los recursos tácticos más importantes y frecuentes en ajedrez. Se produce cuando una sola jugada crea dos amenazas simultáneas contra el adversario. Como normalmente solo puede responderse eficazmente a una amenaza cada vez, el jugador que realiza el ataque doble suele conseguir una ventaja material o posicional.
+
+El ejemplo más conocido es el tenedor, en el que una pieza ataca al mismo tiempo a dos o más piezas enemigas. Los caballos son especialmente eficaces en este tipo de táctica debido a su particular forma de movimiento, aunque cualquier pieza, e incluso un peón, puede realizar un ataque doble.
+[PAGINA]
+[FEN: 8/8/1k6/8/N1p3P1/3b1PK1/Nr6/8 b - - 4 48 | C: b2-r, b6-r, a4-g | A: a4b6-g, a4b2-g]
+
+No obstante, un ataque doble no tiene por qué consistir únicamente en atacar dos piezas. Una de las amenazas puede ser, por ejemplo, un jaque al rey, mientras que la segunda amenaza consiste en capturar una pieza importante. También puede combinar amenazas de mate, promociones de peón o ataques sobre puntos débiles.
+
+La fuerza del ataque doble reside precisamente en obligar al adversario a [PAGINA]enfrentarse a dos problemas al mismo tiempo. Por ello, al analizar una posición conviene buscar movimientos que generen varias amenazas simultáneas.
+
+Reconocer este patrón es fundamental para mejorar tácticamente, tanto para aprovechar ataques dobles propios como para detectar y evitar los que pueda preparar el rival.

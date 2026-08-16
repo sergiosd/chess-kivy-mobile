@@ -25,25 +25,32 @@ class ChessManager:
         # Almacena el diccionario completo con los metadatos del puzle (ELO, popularidad, temas)[cite: 1]
         self.info_puzzle = None
 
-    def cargar_puzzle(self, puzzle):
+    def cargar_puzzle(self, puzzle: dict) -> None:
         """
-        Carga la notación FEN en el tablero y ejecuta el movimiento de preparación del rival.
+        Carga la notación FEN en el tablero y prepara la máquina de estados.
+
+        Discrimina automáticamente entre puzles estándar (que exigen forzar el
+        movimiento trágico del rival) y las lecciones interactivas (donde el FEN
+        ya posiciona al jugador en su turno de ataque).
 
         Args:
-            puzzle (dict): Diccionario que contiene 'fen' y la lista de movimientos 'moves'.
+            puzzle (dict): Estructura de datos que contiene 'fen', la secuencia
+                           ganadora 'moves' y metadatos identificativos como 'id'.
         """
         self.board.set_fen(puzzle['fen'])
         self.solucion = puzzle['moves']
         self.info_puzzle = puzzle
 
-        # EL TRUCO MAGISTRAL: El primer movimiento de la lista siempre es del enemigo.
-        # Al aplicarlo, dejamos el tablero listo para que el jugador responda[cite: 1].
-        if len(self.solucion) > 0:
+        # ¡El escudo lógico! Verificamos el pasaporte del puzle
+        es_leccion_teorica = puzzle.get('id') == 'Leccion'
+
+        # Si viene de Lichess y tiene movimientos, la máquina usurpa el primer turno
+        if not es_leccion_teorica and len(self.solucion) > 0:
             movimiento_rival = chess.Move.from_uci(self.solucion[0])
             self.board.push(movimiento_rival)
-            # El jugador empieza a interactuar a partir del índice 1 (su primer turno)[cite: 1]
             self.paso_actual = 1
         else:
+            # En la Escuela, el tablero está congelado esperando tu genialidad
             self.paso_actual = 0
 
         self.casilla_seleccionada = None

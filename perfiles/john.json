@@ -1,17 +1,24 @@
 {
     "nombre": "john",
-    "elo": 262,
+    "elo": 382,
     "resueltos": [
         "0irLv",
         "0nQDT",
         "0uZJp",
         "06fWI",
-        "02Ekq"
+        "02Ekq",
+        "0gXoH",
+        "0K7Lm",
+        "0z9Jp",
+        "0yRN4",
+        "0d7gs",
+        "074Ca"
     ],
-    "partidas_jugadas": 13,
-    "escala_pop": 0,
-    "victorias_100": 2,
+    "partidas_jugadas": 21,
+    "escala_pop": 4,
+    "victorias_100": 0,
     "progreso_escuela": {
-        "tac_01": true
+        "tac_01": true,
+        "tac_02": true
     }
 }

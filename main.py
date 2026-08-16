@@ -254,6 +254,15 @@ class VistaTablero(BoxLayout):
         Resetea la interfaz (limpiando flechas de error y textos), actualiza el
         motor lógico y solicita la re-renderización visual[cite: 3].
         """
+        app = App.get_running_app()
+        if getattr(app, 'modo_leccion', False):
+            app.modo_leccion = False
+            visor = app.sm.get_screen('escuela_visor')
+            if visor.indice_pagina < len(visor.paginas) - 1:
+                visor.indice_pagina += 1
+                visor.mostrar_pagina()
+            app.sm.current = 'escuela_visor'
+            return
         self.limpiar_flecha()
         elo_jugador = self.perfil_actual.get("elo", 600)
         historial_resueltos = set(self.perfil_actual.get("resueltos", []))
@@ -613,6 +622,9 @@ class VistaTablero(BoxLayout):
             tuple: (variacion_entera, nuevo_elo_entero) Listos para ser inyectados
                    en la interfaz sin rastro de decimales.
         """
+        if getattr(App.get_running_app(), 'modo_leccion', False):
+            return 0, int(self.perfil_actual.get("elo", 0))
+
         info = self.gestor_ajedrez.info_puzzle
         if not info:
             return 0, int(self.perfil_actual.get("elo", 0))
@@ -723,6 +735,215 @@ class VistaTablero(BoxLayout):
             self.ids.lbl_estado.text = f"Tu turno: {color_turno}"
         else:
             self.ids.lbl_estado.text = "[color=#ff0000]ERROR: Puzzle no encontrado.[/color]"
+
+
+class VistaLeccion(BoxLayout):
+    """
+    Orquestador gráfico dedicado exclusivamente a la asimilación táctica.
+
+    Aislado por completo de la persistencia de perfiles y los cálculos de ELO.
+    Solo valida el movimiento y permite al usuario regresar al texto teórico.
+    """
+
+    def __init__(self, gestor_ajedrez, msg_correcto="¡MAGISTRAL! Lección dominada.", msg_error="¡ERROR FATAL! Repasa la teoría.", **kwargs):
+        """
+        Inicializa el tablero de la lección almacenando los textos de respuesta.
+        """
+
+        super().__init__(**kwargs)
+        self.gestor_ajedrez = gestor_ajedrez
+        self.msg_correcto = msg_correcto
+        self.msg_error = msg_error
+        self.diccionario_casillas = {}
+
+        BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+        self.sonido_seleccionar = SoundLoader.load(
+            os.path.join(BASE_DIR, 'assets', 'sounds', 'select.wav'))
+        self.sonido_mover = SoundLoader.load(os.path.join(BASE_DIR, 'assets', 'sounds', 'move.wav'))
+        self.sonido_ganar = SoundLoader.load(os.path.join(BASE_DIR, 'assets', 'sounds', 'win.wav'))
+        self.sonido_perder = SoundLoader.load(
+            os.path.join(BASE_DIR, 'assets', 'sounds', 'lose.wav'))
+
+        self.mapa_imagenes = {
+            'P': os.path.join(BASE_DIR, 'assets', 'pieces', 'blanco_peon.png'),
+            'p': os.path.join(BASE_DIR, 'assets', 'pieces', 'negro_peon.png'),
+            'N': os.path.join(BASE_DIR, 'assets', 'pieces', 'blanco_caballo.png'),
+            'n': os.path.join(BASE_DIR, 'assets', 'pieces', 'negro_caballo.png'),
+            'B': os.path.join(BASE_DIR, 'assets', 'pieces', 'blanco_alfil.png'),
+            'b': os.path.join(BASE_DIR, 'assets', 'pieces', 'negro_alfil.png'),
+            'R': os.path.join(BASE_DIR, 'assets', 'pieces', 'blanco_torre.png'),
+            'r': os.path.join(BASE_DIR, 'assets', 'pieces', 'negro_torre.png'),
+            'Q': os.path.join(BASE_DIR, 'assets', 'pieces', 'blanco_reina.png'),
+            'q': os.path.join(BASE_DIR, 'assets', 'pieces', 'negro_reina.png'),
+            'K': os.path.join(BASE_DIR, 'assets', 'pieces', 'blanco_rey.png'),
+            'k': os.path.join(BASE_DIR, 'assets', 'pieces', 'negro_rey.png')
+        }
+        self.inicializar_tablero()
+        self.actualizar_piezas_visuales()
+
+    def inicializar_tablero(self) -> None:
+        cuadricula = self.ids.cuadricula_tablero
+        cuadricula.clear_widgets()
+        self.diccionario_casillas.clear()
+
+        juega_blancas = self.gestor_ajedrez.board.turn
+        filas = list(range(7, -1, -1)) if juega_blancas else list(range(8))
+        columnas = list(range(8)) if juega_blancas else list(range(7, -1, -1))
+
+        for fila in filas:
+            for col in columnas:
+                nombre = chess.square_name(chess.square(col, fila))
+                casilla = Casilla(nombre_casilla=nombre, controlador=self)
+                es_clara = (fila + col) % 2 != 0
+                casilla.ruta_fondo = "assets/squares/casilla_clara.png" if es_clara else "assets/squares/casilla_oscura.png"
+
+                if col == columnas[0]: casilla.texto_fila = nombre[1]
+                if fila == filas[-1]: casilla.texto_col = nombre[0]
+
+                self.diccionario_casillas[nombre] = casilla
+                cuadricula.add_widget(casilla)
+
+    def actualizar_piezas_visuales(self) -> None:
+        tablero = self.gestor_ajedrez.board
+        for nombre, widget in self.diccionario_casillas.items():
+            pieza = tablero.piece_at(chess.parse_square(nombre))
+            widget.ruta_pieza = self.mapa_imagenes.get(pieza.symbol(), '') if pieza else ''
+
+        if self.gestor_ajedrez.estado_puzzle == "JUGANDO":
+            es_blancas = tablero.turn == chess.WHITE
+            color = "[color=#ffffff]BLANCAS[/color]" if es_blancas else "[color=#ff6b6b]NEGRAS[/color]"
+            self.ids.lbl_estado.text = f"Encuentra el movimiento para: {color}"
+
+    def al_tocar_casilla(self, nombre_casilla: str) -> None:
+        gestor = self.gestor_ajedrez
+
+        if gestor.casilla_seleccionada and nombre_casilla in gestor.movimientos_validos:
+            origen = gestor.casilla_seleccionada
+            pieza_antes = gestor.board.piece_at(chess.parse_square(origen))
+            simbolo_vuelo = pieza_antes.symbol() if pieza_antes else ''
+
+            exito = gestor.intentar_movimiento_jugador(nombre_casilla)
+            self.limpiar_iluminacion()
+
+            if exito:
+                if self.sonido_mover: self.sonido_mover.play()
+                pieza_despues = gestor.board.piece_at(chess.parse_square(nombre_casilla))
+                simbolo_final = pieza_despues.symbol() if pieza_despues else simbolo_vuelo
+
+                self.actualizar_piezas_visuales()
+                self.diccionario_casillas[nombre_casilla].ruta_pieza = ''
+
+                def terminar_vuelo() -> None:
+                    self.diccionario_casillas[nombre_casilla].ruta_pieza = self.mapa_imagenes.get(
+                        simbolo_final, '')
+                    if gestor.estado_puzzle == "VICTORIA":
+                        if self.sonido_ganar: self.sonido_ganar.play()
+                        self.ids.lbl_estado.text = f"[color=#33cc33]{self.msg_correcto}[/color]"
+                        self.revelar_boton("Siguiente",[0.2, 0.8, 0.4, 1])
+                    else:
+                        self.ids.lbl_estado.text = "¡Excelente! Responde la IA..."
+                        Clock.schedule_once(self.procesar_respuesta_ia, 0.4)
+
+                self.animar_pieza(origen, nombre_casilla, simbolo_vuelo, terminar_vuelo)
+            else:
+                self.actualizar_piezas_visuales()
+                if self.sonido_perder: self.sonido_perder.play()
+                self.ids.lbl_estado.text = f"[color=#cc3333]{self.msg_error}[/color]"
+
+                if gestor.movimiento_fallado:
+                    self.mostrar_flecha_error(gestor.movimiento_fallado)
+
+                self.revelar_boton("Siguiente",[0.8, 0.4, 0.1, 1])
+        else:
+            gestor.seleccionar_casilla(nombre_casilla)
+            self.iluminar_casillas()
+            if gestor.casilla_seleccionada and self.sonido_seleccionar:
+                self.sonido_seleccionar.play()
+
+    def procesar_respuesta_ia(self, dt: float) -> None:
+        mov = self.gestor_ajedrez.ejecutar_movimiento_enemigo()
+        if mov:
+            origen, destino = mov[:2], mov[2:4]
+            pieza = self.gestor_ajedrez.board.piece_at(chess.parse_square(destino))
+            simbolo = pieza.symbol() if pieza else ''
+            self.diccionario_casillas[origen].ruta_pieza = ''
+
+            def terminar_animacion_ia() -> None:
+                self.actualizar_piezas_visuales()
+                if self.sonido_mover: self.sonido_mover.play()
+                if self.gestor_ajedrez.estado_puzzle == "VICTORIA":
+                    self.ids.lbl_estado.text = f"[color=#33cc33]{self.msg_correcto}[/color]"
+                    self.revelar_boton("Siguiente",[0.2, 0.8, 0.4, 1])
+                else:
+                    self.ids.lbl_estado.text = "¡Tu turno! Continúa."
+
+    def revelar_boton(self, texto: str, color: list) -> None:
+        self.ids.btn_continuar.text = texto
+        self.ids.btn_continuar.background_color = color
+        self.ids.btn_continuar.opacity = 1
+        self.ids.btn_continuar.disabled = False
+
+    def retornar_visor(self) -> None:
+        app = App.get_running_app()
+        app.modo_leccion = False
+        visor = app.sm.get_screen('escuela_visor')
+
+        if visor.indice_pagina < len(visor.paginas) - 1:
+            visor.indice_pagina += 1
+            visor.mostrar_pagina()
+
+        app.sm.current = 'escuela_visor'
+
+    def iluminar_casillas(self) -> None:
+        self.limpiar_iluminacion()
+        gestor = self.gestor_ajedrez
+        if gestor.casilla_seleccionada:
+            c_orig = self.diccionario_casillas.get(gestor.casilla_seleccionada)
+            if c_orig: c_orig.origen_seleccionado = True
+            for d in gestor.movimientos_validos:
+                c_dest = self.diccionario_casillas.get(d)
+                if c_dest: c_dest.destino_valido = True
+
+    def limpiar_iluminacion(self) -> None:
+        for widget in self.diccionario_casillas.values():
+            widget.origen_seleccionado = False
+            widget.destino_valido = False
+
+    def animar_pieza(self, origen: str, destino: str, simbolo: str, callback) -> None:
+        co = self.diccionario_casillas[origen]
+        cd = self.diccionario_casillas[destino]
+        pos_ini = co.parent.to_window(co.x, co.y)
+        pos_fin = cd.parent.to_window(cd.x, cd.y)
+
+        fantasma = Image(source=self.mapa_imagenes.get(simbolo, ''), size_hint=(None, None),
+                         size=co.size, pos=pos_ini)
+        Window.add_widget(fantasma)
+
+        anim = Animation(pos=pos_fin, d=0.3, t='in_out_expo')
+
+        def limpiar(*args):
+            Window.remove_widget(fantasma)
+            callback()
+
+        anim.bind(on_complete=limpiar)
+        anim.start(fantasma)
+
+    def mostrar_flecha_error(self, mov: str) -> None:
+        co = self.diccionario_casillas.get(mov[:2])
+        cd = self.diccionario_casillas.get(mov[2:4])
+        if not co or not cd: return
+
+        x1, y1 = co.x + co.width / 2, co.y + co.height / 2
+        x2, y2 = cd.x + cd.width / 2, cd.y + cd.height / 2
+
+        with self.ids.cuadricula_tablero.canvas.after:
+            Color(0.4, 0.8, 0.4, 0.7)
+            self.linea_error = Line(points=[x1, y1, x2, y2], width=dp(4))
+            angulo = math.atan2(y2 - y1, x2 - x1)
+            l = dp(16)
+            p2 = (x2 - l * math.cos(angulo - math.pi / 6), y2 - l * math.sin(angulo - math.pi / 6))
+            p3 = (x2 - l * math.cos(angulo + math.pi / 6), y2 - l * math.sin(angulo + math.pi / 6))
+            self.triangulo_error = Triangle(points=[x2, y2, p2[0], p2[1], p3[0], p3[1]])
 
 class PopupElo(Popup):
     """
@@ -1060,9 +1281,6 @@ class PantallaConfiguracion(Screen):
     #     if self.perfil_actual:
     #         app.iniciar_juego(self.perfil_actual["nombre"])
 
-    def volver_menu(self) -> None:
-        """Retrocede bruscamente al menú principal."""
-        App.get_running_app().sm.current = 'menu_principal'
 
 class PantallaPractica(Screen):
     """
@@ -1363,6 +1581,10 @@ class ChessApp(App):
         # Visor Teórico de Unidades (La cura definitiva para tu error)
         pantalla_visor = PantallaVisorUnidad(name='escuela_visor')
         self.sm.add_widget(pantalla_visor)
+
+        # Contenedor dedicado puramente a la ejecución táctica de las lecciones
+        self.pantalla_leccion = Screen(name='pantalla_leccion')
+        self.sm.add_widget(self.pantalla_leccion)
 
         # Forzamos la entrada inicial al menú principal
         self.sm.current = 'menu_principal'

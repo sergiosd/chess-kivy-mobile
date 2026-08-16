@@ -16,11 +16,11 @@
     "archivos": {
         "tac_01": {
             "teoria": "tactica_introduccion_teoria.txt",
-            "ejemplos": "tactica_ejemplos.txt",
+            "ejemplos": null,
             "practica": null
         },
         "tac_02": {
-            "teoria": null,
+            "teoria": "tactica_doble_teoria.txt",
             "ejemplos": null,
             "practica": null
         }
