@@ -17,6 +17,7 @@ from kivy.metrics import dp
 from kivy.graphics import Color, Rectangle, Line, Triangle
 from kivy.clock import Clock
 
+from utilidades import compilar_markdown_a_kivy
 
 
 
@@ -524,7 +525,7 @@ class PantallaVisorUnidad(Screen):
             texto (str): Teoría de ajedrez.
         """
         etiqueta = Factory.TextoLeccion()
-        etiqueta.text = texto
+        etiqueta.text = compilar_markdown_a_kivy(texto)
         contenedor.add_widget(etiqueta)
 
     def _agregar_minitablero(self, contenedor, bloque_datos: str) -> None:
