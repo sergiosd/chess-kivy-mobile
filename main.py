@@ -41,6 +41,7 @@ import math
 from typing import Callable
 import os
 
+
 # Importación de nuestros robustos módulos lógicos[cite: 3]
 from chess_manager import ChessManager
 from puzzle_manager import PuzzleManager, GestorProgresionPop
@@ -48,7 +49,10 @@ from perfil_manager import PerfilManager
 from utilidades import CalculadorElo
 from escuela_controladores import PantallaEscuelaTemas, PantallaEscuelaUnidades, PantallaVisorUnidad
 from escuela_controladores import PantallaVisorUnidad
+from utilidades_log import configurar_logger, LOG_DEBUG
 
+# Inicializa el espía a nivel de módulo
+log = configurar_logger("VistaLeccion")
 
 # Diccionario maestro para purgar el inglés del CSV
 DICCIONARIO_TEMAS = {
@@ -438,46 +442,34 @@ class VistaTablero(BoxLayout):
             self.ids.lbl_estado.color = [1, 1, 0, 1]
             Clock.schedule_once(self.procesar_respuesta_ia, 0.3)
 
-    def procesar_respuesta_ia(self, dt):
+    def procesar_respuesta_ia(self, dt: float) -> None:
         """
-        Ejecuta el paso de la táctica correspondiente a la máquina enemiga.
+        Ejecuta y anima el movimiento de respuesta de la IA en la lección táctica.
 
-        Programa la animación fantasma del rival para crear la ilusión óptica
-        de movimiento antes de pintar la textura real en la matriz. Si el puzle
-        concluye victoriosamente tras el forzado movimiento de la IA, revela los temas.
+        Sincroniza la vista mediante un callback asíncrono una vez concluida
+        la animación del widget flotante.
 
         Args:
-            dt (float): Tiempo delta inyectado por el sagrado pero temperamental
-                        Clock.schedule de Kivy.
+            dt (float): Delta time inyectado por Clock.schedule_once.
         """
         mov = self.gestor_ajedrez.ejecutar_movimiento_enemigo()
+        print("Hola, soy una IA y soy gilipollas")
         if mov:
-            origen = mov[:2]
-            destino = mov[2:4]
-
-            indice_destino = chess.parse_square(destino)
-            pieza = self.gestor_ajedrez.board.piece_at(indice_destino)
+            origen, destino = mov[:2], mov[2:4]
+            pieza = self.gestor_ajedrez.board.piece_at(chess.parse_square(destino))
             simbolo = pieza.symbol() if pieza else ''
-
             self.diccionario_casillas[origen].ruta_pieza = ''
 
-            def terminar_animacion_ia():
+            def terminar_animacion_ia() -> None:
+                """Callback invocado al finalizar la animación de la IA."""
                 self.actualizar_piezas_visuales()
-                if self.sonido_mover: self.sonido_mover.play()
-
+                if self.sonido_mover:
+                    self.sonido_mover.play()
                 if self.gestor_ajedrez.estado_puzzle == "VICTORIA":
-                    variacion, nuevo_elo = self.registrar_resultado_puzzle(True)
-                    self.ids.lbl_estado.text = f"¡CORRECTO! Elo sube +{variacion}, nuevo ELO = {nuevo_elo}"
-                    self.ids.lbl_estado.color = [0, 1, 0, 1]
-
-                    # Desplegamos los temas si la táctica finaliza con el enemigo
-                    self.mostrar_temas_traducidos()
-
-                    self.ids.btn_volver.opacity = 1
-                    self.ids.btn_volver.disabled = False
+                    self.ids.lbl_estado.text = f"[color=#33cc33]{self.msg_correcto}[/color]"
+                    self.revelar_boton("Siguiente", [0.2, 0.8, 0.4, 1])
                 else:
                     self.ids.lbl_estado.text = "¡Tu turno! Continúa."
-                    self.ids.lbl_estado.color = [0.9, 0.9, 0.9, 1]
 
             self.animar_pieza(origen, destino, simbolo, terminar_animacion_ia)
 
@@ -860,22 +852,66 @@ class VistaLeccion(BoxLayout):
             if gestor.casilla_seleccionada and self.sonido_seleccionar:
                 self.sonido_seleccionar.play()
 
+    # Importa el logger en la cabecera de tu main.py
+    from utilidades_log import configurar_logger
+
+    # Inicializa el espía a nivel de módulo
+    log = configurar_logger("VistaLeccion")
+
+    # ... (dentro de tu clase VistaLeccion) ...
+
     def procesar_respuesta_ia(self, dt: float) -> None:
+        """
+        Ejecuta y anima el movimiento de respuesta de la máquina enemiga.
+
+        Dispara trazas físicas al disco duro para evidenciar si el motor
+        gráfico asíncrono está matando el hilo silenciosamente.
+
+        Args:
+            dt (float): Tiempo diferencial inyectado por Clock.schedule_once.
+        """
+        if LOG_DEBUG:
+            log.debug(f"INICIO: procesar_respuesta_ia invocado por Clock con dt={dt}")
+
         mov = self.gestor_ajedrez.ejecutar_movimiento_enemigo()
+        if LOG_DEBUG:
+            log.debug(f"Motor lógico devolvió el movimiento: {mov}")
+
         if mov:
             origen, destino = mov[:2], mov[2:4]
+            if LOG_DEBUG:
+                log.info(f"Procesando texturas de {origen} hacia {destino}")
+
             pieza = self.gestor_ajedrez.board.piece_at(chess.parse_square(destino))
             simbolo = pieza.symbol() if pieza else ''
+
             self.diccionario_casillas[origen].ruta_pieza = ''
+            if LOG_DEBUG:
+                log.debug("Textura de origen borrada con éxito.")
 
             def terminar_animacion_ia() -> None:
+                """Callback invocado al concluir el deslizamiento visual."""
+                if LOG_DEBUG:
+                    log.debug("CALLBACK: terminar_animacion_ia ejecutado por Animation.")
                 self.actualizar_piezas_visuales()
-                if self.sonido_mover: self.sonido_mover.play()
+
+                if self.sonido_mover:
+                    self.sonido_mover.play()
+
                 if self.gestor_ajedrez.estado_puzzle == "VICTORIA":
                     self.ids.lbl_estado.text = f"[color=#33cc33]{self.msg_correcto}[/color]"
-                    self.revelar_boton("Siguiente",[0.2, 0.8, 0.4, 1])
+                    self.revelar_boton("Siguiente", [0.2, 0.8, 0.4, 1])
                 else:
                     self.ids.lbl_estado.text = "¡Tu turno! Continúa."
+
+            if LOG_DEBUG:
+                log.info(f"Disparando self.animar_pieza para el símbolo '{simbolo}'")
+            self.animar_pieza(origen, destino, simbolo, terminar_animacion_ia)
+            if LOG_DEBUG:
+                log.debug("FIN: procesar_respuesta_ia. Animación entregada a Kivy.")
+        else:
+            if LOG_DEBUG:
+                log.warning("El motor lógico devolvió None. No hay movimiento enemigo pendiente.")
 
     def revelar_boton(self, texto: str, color: list) -> None:
         self.ids.btn_continuar.text = texto

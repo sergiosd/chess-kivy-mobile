@@ -639,22 +639,30 @@ class PantallaVisorUnidad(Screen):
 
     def lanzar_puzzle_leccion(self, datos_puzzle: str, msg_correcto: str, msg_error: str) -> None:
         """
-        Inyecta los datos de la lección y despliega la interfaz educativa aséptica.
+        Inyecta los datos de la lección y despliega la interfaz educativa.
 
-        Transfiere los mensajes de texto personalizados al Factory de Kivy para
-        que la vista visualice el feedback exacto redactado en el archivo.
+        Normaliza el desglose de la cadena de datos aislando el FEN y
+        la secuencia de movimientos en notación UCI, admitiendo espacios o comas.
 
         Args:
-            datos_puzzle (str): El fragmento de texto extraído con el FEN.
-            msg_correcto (str): Texto a mostrar en caso de acierto.
-            msg_error (str): Texto a mostrar si el usuario falla.
+            datos_puzzle (str): Cadena en bruto extraída de la etiqueta [FEN:...].
+            msg_correcto (str): Mensaje de victoria configurado en la lección.
+            msg_error (str): Mensaje de fallo configurado en la lección.
         """
         from kivy.app import App
         from kivy.factory import Factory
 
-        tramos = datos_puzzle.split('|SOL:')
+        # Troceamos por la barra vertical ignorando espacios sobrantes
+        tramos = datos_puzzle.split('|')
         fen = tramos[0].strip()
-        solucion = tramos[1].strip().split(',') if len(tramos) > 1 else []
+        solucion = []
+
+        for tramo in tramos[1:]:
+            tramo_limpio = tramo.strip()
+            if tramo_limpio.startswith('SOL:'):
+                # Extraemos la cadena tras 'SOL:' y unificamos comas a espacios
+                crudo = tramo_limpio[4:].replace(',', ' ')
+                solucion = [mov.strip() for mov in crudo.split() if mov.strip()]
 
         app = App.get_running_app()
         app.modo_leccion = True

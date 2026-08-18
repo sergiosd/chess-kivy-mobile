@@ -1,0 +1,21 @@
+[2026-08-17 09:16:12,093] [DEBUG] [main:procesar_respuesta_ia] - INICIO: procesar_respuesta_ia invocado por Clock con dt=0.3998420999851078
+[2026-08-17 09:16:12,094] [DEBUG] [main:procesar_respuesta_ia] - Motor lógico devolvió el movimiento: b6c6
+[2026-08-17 09:16:12,095] [INFO] [main:procesar_respuesta_ia] - Procesando texturas de b6 hacia c6
+[2026-08-17 09:16:12,095] [DEBUG] [main:procesar_respuesta_ia] - Textura de origen borrada con éxito.
+[2026-08-17 09:16:12,095] [INFO] [main:procesar_respuesta_ia] - Disparando self.animar_pieza para el símbolo 'k'
+[2026-08-17 09:16:12,096] [DEBUG] [main:procesar_respuesta_ia] - FIN: procesar_respuesta_ia. Animación entregada a Kivy.
+[2026-08-17 09:16:12,405] [DEBUG] [main:terminar_animacion_ia] - CALLBACK: terminar_animacion_ia ejecutado por Animation.
+[2026-08-17 09:17:35,280] [DEBUG] [main:procesar_respuesta_ia] - INICIO: procesar_respuesta_ia invocado por Clock con dt=0.4002972999587655
+[2026-08-17 09:17:35,281] [DEBUG] [main:procesar_respuesta_ia] - Motor lógico devolvió el movimiento: b6c6
+[2026-08-17 09:17:35,281] [INFO] [main:procesar_respuesta_ia] - Procesando texturas de b6 hacia c6
+[2026-08-17 09:17:35,282] [DEBUG] [main:procesar_respuesta_ia] - Textura de origen borrada con éxito.
+[2026-08-17 09:17:35,282] [INFO] [main:procesar_respuesta_ia] - Disparando self.animar_pieza para el símbolo 'k'
+[2026-08-17 09:17:35,283] [DEBUG] [main:procesar_respuesta_ia] - FIN: procesar_respuesta_ia. Animación entregada a Kivy.
+[2026-08-17 09:17:35,592] [DEBUG] [main:terminar_animacion_ia] - CALLBACK: terminar_animacion_ia ejecutado por Animation.
+[2026-08-17 18:59:27,205] [DEBUG] [main:procesar_respuesta_ia] - INICIO: procesar_respuesta_ia invocado por Clock con dt=0.40157600003294647
+[2026-08-17 18:59:27,206] [DEBUG] [main:procesar_respuesta_ia] - Motor lógico devolvió el movimiento: b6c6
+[2026-08-17 18:59:27,206] [INFO] [main:procesar_respuesta_ia] - Procesando texturas de b6 hacia c6
+[2026-08-17 18:59:27,206] [DEBUG] [main:procesar_respuesta_ia] - Textura de origen borrada con éxito.
+[2026-08-17 18:59:27,206] [INFO] [main:procesar_respuesta_ia] - Disparando self.animar_pieza para el símbolo 'k'
+[2026-08-17 18:59:27,208] [DEBUG] [main:procesar_respuesta_ia] - FIN: procesar_respuesta_ia. Animación entregada a Kivy.
+[2026-08-17 18:59:27,522] [DEBUG] [main:terminar_animacion_ia] - CALLBACK: terminar_animacion_ia ejecutado por Animation.
