@@ -3,6 +3,8 @@ import random
 import json
 import os
 
+from utilidades import CalculadorRatingTactico
+
 
 class GestorProgresionPop:
     """
@@ -278,29 +280,22 @@ class PuzzleManager:
         return {}
 
     def obtener_puzzle_practica(self, id_leccion: str, archivo_csv: str,
-                                perfil_usuario: dict) -> dict:
+                                perfil_usuario: dict) -> dict | None:
         """
-        Extrae un puzle aleatorio de la base de datos local asociada a la lección.
+        Extrae un puzzle de práctica ponderando su longitud según el rating local.
 
-        Aplica teoría de conjuntos para purgar los ejercicios consumidos. Corrige
-        el enrutamiento al directorio 'databases' y separa conceptualmente
-        la ausencia física del archivo del agotamiento matemático de puzles.
+        Los ejercicios ya resueltos o fallados quedan excluidos. La dificultad
+        rankeada se deriva de los plies de la solución y no del ELO del CSV.
 
         Args:
-            id_leccion (str): Identificador único de la lección (ej. 'tac_02').
-            archivo_csv (str): Nombre del archivo físico que contiene los puzles.
-            perfil_usuario (dict): Estado actual del jugador cargado en memoria.
+            id_leccion (str): Identificador único de la lección.
+            archivo_csv (str): Archivo CSV asociado a la práctica.
+            perfil_usuario (dict): Perfil activo cargado en memoria.
 
         Returns:
-            dict: Metadatos y FEN del puzle formateados para el motor.
-            Devuelve un diccionario vacío {} si el archivo no existe o está corrupto.
-            Devuelve None EXCLUSIVAMENTE si el jugador ha resuelto todos los puzles.
+            dict o None: Puzzle listo para el motor, {} si falla el archivo y
+            None si no quedan puzzles rankeados disponibles.
         """
-        import os
-        import csv
-        import random
-
-        # Enrutamos estrictamente al directorio de bases de datos masivas
         ruta_completa = os.path.join('databases', archivo_csv)
 
         if not os.path.exists(ruta_completa):
@@ -308,35 +303,81 @@ class PuzzleManager:
             return {}
 
         datos_leccion = perfil_usuario.get("practica_lecciones", {}).get(id_leccion, {})
-        ids_excluidos = set(datos_leccion.get("resueltos", [])) | set(
-            datos_leccion.get("fallados", []))
-
-        puzzles_disponibles = []
+        ids_excluidos = (
+            set(datos_leccion.get("resueltos", []))
+            | set(datos_leccion.get("fallados", []))
+        )
+        rating_usuario = CalculadorRatingTactico.normalizar_rating(
+            datos_leccion.get("rating", 0.0)
+        )
+        pesos = CalculadorRatingTactico.obtener_pesos_seleccion(rating_usuario)
+        puzzles_por_grupo = {grupo: [] for grupo in pesos}
 
         try:
             with open(ruta_completa, mode='r', encoding='utf-8') as archivo:
                 lector_csv = csv.reader(archivo)
-                next(lector_csv, None)  # Purgamos la cabecera
+                next(lector_csv, None)
 
                 for fila in lector_csv:
                     if len(fila) < 8:
                         continue
 
                     id_puzzle = fila[0]
-                    if id_puzzle not in ids_excluidos:
-                        puzzles_disponibles.append({
-                            "id": id_puzzle,
-                            "fen": fila[1],
-                            "moves": fila[2].split(" "),
-                            "rating": int(fila[3]) if fila[3].isdigit() else 1000,
-                            "popularity": int(fila[5]) if fila[5].isdigit() else 100,
-                            "themes": fila[7]
-                        })
-        except Exception as e:
+                    if id_puzzle in ids_excluidos:
+                        continue
+
+                    movimientos = fila[2].split()
+                    plies = len(movimientos)
+
+                    if plies == 4:
+                        grupo = "4"
+                    elif plies == 6:
+                        grupo = "6"
+                    elif plies == 8:
+                        grupo = "8"
+                    elif plies >= 10:
+                        grupo = "10+"
+                    else:
+                        continue
+
+                    if grupo not in puzzles_por_grupo:
+                        continue
+
+                    try:
+                        elo_externo = int(fila[3])
+                    except (TypeError, ValueError):
+                        elo_externo = 1000
+
+                    try:
+                        popularidad = int(fila[5])
+                    except (TypeError, ValueError):
+                        popularidad = 100
+
+                    puzzles_por_grupo[grupo].append({
+                        "id": id_puzzle,
+                        "fen": fila[1],
+                        "moves": movimientos,
+                        "rating": elo_externo,
+                        "popularity": popularidad,
+                        "themes": fila[7],
+                        "plies": plies,
+                        "dificultad_rating": CalculadorRatingTactico.dificultad_por_plies(plies)
+                    })
+        except (OSError, csv.Error) as e:
             print(f"ERROR: Fallo al leer el CSV de práctica: {e}")
             return {}
 
-        if not puzzles_disponibles:
+        grupos_disponibles = [
+            grupo for grupo, puzzles in puzzles_por_grupo.items() if puzzles
+        ]
+        if not grupos_disponibles:
             return None
 
-        return random.choice(puzzles_disponibles)
+        pesos_disponibles = [pesos[grupo] for grupo in grupos_disponibles]
+        grupo_elegido = random.choices(
+            grupos_disponibles,
+            weights=pesos_disponibles,
+            k=1
+        )[0]
+        return random.choice(puzzles_por_grupo[grupo_elegido])
+

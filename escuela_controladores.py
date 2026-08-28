@@ -992,19 +992,19 @@ class PantallaMenuLeccion(Screen):
         contenedor.clear_widgets()
 
         btn_teoria = FilaParteLeccion()
-        btn_teoria.texto_parte = "Teoría"
+        btn_teoria.texto_parte = "1. Teoría"
         btn_teoria.bind(on_release=lambda x: self.desplegar_capitulos_teoria())
         contenedor.add_widget(btn_teoria)
 
         if tiene_ejemplos:
             btn_ejemplos = FilaParteLeccion()
-            btn_ejemplos.texto_parte = "Ejemplos"
+            btn_ejemplos.texto_parte = "2. Ejemplos"
             btn_ejemplos.bind(on_release=lambda x: self.abrir_ejemplos())
             contenedor.add_widget(btn_ejemplos)
 
         if tiene_practica:
             btn_practica = FilaParteLeccion()
-            btn_practica.texto_parte = "Práctica"
+            btn_practica.texto_parte = "3. Práctica"
             btn_practica.bind(on_release=lambda x: self.abrir_practica())
             contenedor.add_widget(btn_practica)
 
@@ -1222,6 +1222,7 @@ class PantallaMenuLeccion(Screen):
         vista = VistaPracticaLeccion(
             id_leccion=self.id_leccion,
             archivo_csv=archivo_csv,
+            titulo_leccion=self.titulo_leccion,
             gestor_ajedrez=app.gestor_ajedrez,
             gestor_puzzles=app.gestor_puzzles,
             perfil_actual=perfil_cargado,

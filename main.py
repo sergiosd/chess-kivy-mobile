@@ -320,6 +320,20 @@ class VistaTablero(BoxLayout):
             if self.gestor_ajedrez.estado_puzzle == "JUGANDO":
                 self.ids.lbl_estado.text = f"Tu turno: {color_turno}"
 
+    def formatear_resultado_puzzle(self, victoria: bool, variacion: float,
+                                  nueva_puntuacion: float) -> str:
+        """Genera el texto de resultado para el sistema global de ELO."""
+        if victoria:
+            return (
+                f"¡CORRECTO!, nuevo ELO = {nueva_puntuacion} "
+                f"(+{variacion})"
+            )
+        return f"¡INCORRECTO! nuevo ELO = {nueva_puntuacion} ({variacion})"
+
+    def formatear_info_resultado(self, info: dict) -> str:
+        """Genera los metadatos visibles tras finalizar un puzzle global."""
+        return f"Nivel: {info.get('rating')} ELO | ID: {info.get('id', '--')}"
+
     def al_tocar_casilla(self, nombre_casilla: str) -> None:
         """
         Procesa la lógica gráfica y de estado al pulsar una coordenada táctil.
@@ -380,7 +394,7 @@ class VistaTablero(BoxLayout):
 
                         # Cálculo de ELO persistente[cite: 3]
                         variacion, nuevo_elo = self.registrar_resultado_puzzle(True)
-                        self.ids.lbl_estado.text = f"¡CORRECTO!, nuevo ELO = {nuevo_elo} (+{variacion})"
+                        self.ids.lbl_estado.text = self.formatear_resultado_puzzle(True, variacion, nuevo_elo)
                         self.ids.lbl_estado.color = [0, 1, 0, 1]
 
                         # Inyectamos el conocimiento traducido al saborear la victoria (¡Respetado!)
@@ -404,7 +418,7 @@ class VistaTablero(BoxLayout):
 
                 # Penalización de ELO[cite: 3]
                 variacion, nuevo_elo = self.registrar_resultado_puzzle(False)
-                self.ids.lbl_estado.text = f"¡INCORRECTO! nuevo ELO = {nuevo_elo} ({variacion})"
+                self.ids.lbl_estado.text = self.formatear_resultado_puzzle(False, variacion, nuevo_elo)
                 self.ids.lbl_estado.color = [1, 0.4, 0.4, 1]
 
                 # Dibujamos vectores indicando la jugada que debió hacerse[cite: 3]
@@ -416,7 +430,7 @@ class VistaTablero(BoxLayout):
                 if info:
                     # Inyectamos el conocimiento traducido en la derrota (¡Respetado!)
                     self.mostrar_temas_traducidos()
-                    self.ids.lbl_info.text = f"Nivel: {info.get('rating')} ELO | ID: {info.get('id', '--')}"
+                    self.ids.lbl_info.text = self.formatear_info_resultado(info)
 
                 self.ids.btn_siguiente.text = "Siguiente Puzzle"
                 self.ids.btn_volver.opacity = 1
@@ -470,7 +484,7 @@ class VistaTablero(BoxLayout):
                     self.ids.lbl_estado.text = f"[color=#33cc33]{self.msg_correcto}[/color]"
                     self.revelar_boton("Siguiente", [0.2, 0.8, 0.4, 1])
                 else:
-                    self.ids.lbl_estado.text = "¡Tu turno! Continua."
+                    self.ids.lbl_estado.text = "¡Tu turno! Continúa."
 
             self.animar_pieza(origen, destino, simbolo, terminar_animacion_ia)
 
@@ -486,7 +500,7 @@ class VistaTablero(BoxLayout):
             # Inyección de temas
             self.mostrar_temas_traducidos()
         else:
-            self.ids.lbl_estado.text = "¡Tu turno! Continua."
+            self.ids.lbl_estado.text = "¡Tu turno! Continúa."
             self.ids.lbl_estado.color = [0.9, 0.9, 0.9, 1]
 
     def iluminar_casillas(self):
@@ -903,7 +917,7 @@ class VistaLeccion(BoxLayout):
                     self.ids.lbl_estado.text = f"[color=#33cc33]{self.msg_correcto}[/color]"
                     self.revelar_boton("Siguiente", [0.2, 0.8, 0.4, 1])
                 else:
-                    self.ids.lbl_estado.text = "¡Tu turno! Continua."
+                    self.ids.lbl_estado.text = "¡Tu turno! Continúa."
 
             if LOG_DEBUG:
                 log.info(f"Disparando self.animar_pieza para el símbolo '{simbolo}'")

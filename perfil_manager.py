@@ -134,10 +134,16 @@ class PerfilManager:
 
         if id_leccion not in perfil["practica_lecciones"]:
             perfil["practica_lecciones"][id_leccion] = {
-                "elo": 1000,
+                "rating": 0.0,
                 "resueltos": [],
                 "fallados": []
             }
+            return
+
+        estado_local = perfil["practica_lecciones"][id_leccion]
+        estado_local.setdefault("rating", 0.0)
+        estado_local.setdefault("resueltos", [])
+        estado_local.setdefault("fallados", [])
 
 
 
