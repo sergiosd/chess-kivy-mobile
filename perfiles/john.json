@@ -20,5 +20,16 @@
     "progreso_escuela": {
         "tac_01": true,
         "tac_02": true
+    },
+    "practica_lecciones": {
+        "tac_02": {
+            "elo": 1067,
+            "resueltos": [
+                "ffD9E",
+                "fzyJh",
+                "g814M"
+            ],
+            "fallados": []
+        }
     }
 }

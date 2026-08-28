@@ -1168,8 +1168,67 @@ class PantallaMenuLeccion(Screen):
         print("Stub: Cargar minitableros interactivos de ejemplos")
 
     def abrir_practica(self) -> None:
-        """Activa el motor de ejercicios lógicos."""
-        print("Stub: Cargar motor de validación de práctica")
+        """
+        Inicializa el entorno de práctica táctica para la lección activa.
+
+        Extrae el estado del jugador consultando directamente la persistencia
+        (Modelo) para eludir problemas de alcance con variables no inicializadas
+        en la clase App durante la navegación desde el menú.
+        """
+        from kivy.app import App
+        from vista_practica import VistaPracticaLeccion
+
+        app = App.get_running_app()
+        pantalla_unidades = app.sm.get_screen('escuela_unidades')
+
+        # 1. Recuperamos la configuración del archivo local
+        datos_archivos = pantalla_unidades.ARCHIVOS_LECCIONES.get(self.id_leccion, {})
+        archivo_csv = datos_archivos.get("practica")
+
+        if not archivo_csv:
+            print("ERROR: No hay base de datos de práctica definida para esta lección.")
+            return
+
+        # 2. Consultamos directamente al Modelo (PerfilManager)
+        nombre_usuario = app.gestor_perfiles.obtener_ultimo_usuario()
+        if not nombre_usuario:
+            print("ERROR: No hay usuario activo. Operación abortada.")
+            return
+
+        perfil_cargado = app.gestor_perfiles.cargar_perfil(nombre_usuario)
+
+        # 3. Forzamos la inyección global para mantener la retrocompatibilidad
+        # con la herencia de VistaTablero que aún exige 'app.perfil_actual'
+        app.perfil_actual = perfil_cargado
+
+        app.gestor_perfiles.inicializar_practica_leccion(perfil_cargado, self.id_leccion)
+
+        puzzle = app.gestor_puzzles.obtener_puzzle_practica(
+            id_leccion=self.id_leccion,
+            archivo_csv=archivo_csv,
+            perfil_usuario=perfil_cargado
+        )
+
+        if puzzle == {}:
+            print("ERROR: Archivo CSV no encontrado. Revisa la ruta 'databases/'.")
+            return
+        elif puzzle is None:
+            print("¡Enhorabuena! Has agotado todos los puzles de esta lección.")
+            return
+
+        app.gestor_ajedrez.cargar_puzzle(puzzle)
+        app.pantalla_juego.clear_widgets()
+
+        vista = VistaPracticaLeccion(
+            id_leccion=self.id_leccion,
+            archivo_csv=archivo_csv,
+            gestor_ajedrez=app.gestor_ajedrez,
+            gestor_puzzles=app.gestor_puzzles,
+            perfil_actual=perfil_cargado,
+            gestor_perfiles=app.gestor_perfiles
+        )
+        app.pantalla_juego.add_widget(vista)
+        app.sm.current = 'juego'
 
     def volver_unidades(self) -> None:
         """Provoca la rendición y devuelve al menú global."""

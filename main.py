@@ -78,8 +78,8 @@ if platform != 'android' and platform != 'ios':
     Window.size = (450, 800)
 
 # Diseño KV purgado y estructurado sin errores de indentación en el parser[cite: 3]
-Builder.load_file('interfaz.kv')
-Builder.load_file('escuela.kv')
+# Builder.load_file('interfaz.kv')
+# Builder.load_file('escuela.kv')
 
 from kivy.uix.screenmanager import Screen
 from kivy.uix.button import Button
@@ -1549,7 +1549,8 @@ class ChessApp(App):
             ScreenManager: El widget raíz que contendrá y gestionará las transiciones
                            entre todas las pantallas de la aplicación.
         """
-
+        Builder.load_file('interfaz.kv')
+        Builder.load_file('escuela.kv')
         # Doblegamos la voluntad de Android justo antes de arrancar la interfaz gráfica
         if platform == 'android':
             from android.permissions import request_permissions, Permission

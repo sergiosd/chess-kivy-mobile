@@ -280,28 +280,32 @@ class PuzzleManager:
     def obtener_puzzle_practica(self, id_leccion: str, archivo_csv: str,
                                 perfil_usuario: dict) -> dict:
         """
-        Extrae un puzle aleatorio de una lección específica evitando colisiones.
+        Extrae un puzle aleatorio de la base de datos local asociada a la lección.
 
-        Aplica operaciones de conjuntos para purgar los ejercicios consumidos
-        antes de realizar la selección. Garantiza un tiempo de ejecución
-        O(1) en el paso de aleatoriedad.
+        Aplica teoría de conjuntos para purgar los ejercicios consumidos. Corrige
+        el enrutamiento al directorio 'databases' y separa conceptualmente
+        la ausencia física del archivo del agotamiento matemático de puzles.
 
         Args:
-            id_leccion (str): Identificador de la lección para buscar el historial.
-            archivo_csv (str): Archivo físico que contiene la base de datos local.
-            perfil_usuario (dict): Estado actual del jugador.
+            id_leccion (str): Identificador único de la lección (ej. 'tac_02').
+            archivo_csv (str): Nombre del archivo físico que contiene los puzles.
+            perfil_usuario (dict): Estado actual del jugador cargado en memoria.
 
         Returns:
-            dict o None: Puzle formateado para el motor de ajedrez. None si se agotaron.
+            dict: Metadatos y FEN del puzle formateados para el motor.
+            Devuelve un diccionario vacío {} si el archivo no existe o está corrupto.
+            Devuelve None EXCLUSIVAMENTE si el jugador ha resuelto todos los puzles.
         """
         import os
         import csv
         import random
 
-        ruta_completa = os.path.join('lecciones', archivo_csv)
+        # Enrutamos estrictamente al directorio de bases de datos masivas
+        ruta_completa = os.path.join('databases', archivo_csv)
 
         if not os.path.exists(ruta_completa):
-            return None
+            print(f"ERROR CRÍTICO: No se encuentra el CSV de tácticas en {ruta_completa}")
+            return {}
 
         datos_leccion = perfil_usuario.get("practica_lecciones", {}).get(id_leccion, {})
         ids_excluidos = set(datos_leccion.get("resueltos", [])) | set(
@@ -309,24 +313,28 @@ class PuzzleManager:
 
         puzzles_disponibles = []
 
-        with open(ruta_completa, mode='r', encoding='utf-8') as archivo:
-            lector_csv = csv.reader(archivo)
-            next(lector_csv, None)
+        try:
+            with open(ruta_completa, mode='r', encoding='utf-8') as archivo:
+                lector_csv = csv.reader(archivo)
+                next(lector_csv, None)  # Purgamos la cabecera
 
-            for fila in lector_csv:
-                if len(fila) < 8:
-                    continue
+                for fila in lector_csv:
+                    if len(fila) < 8:
+                        continue
 
-                id_puzzle = fila[0]
-                if id_puzzle not in ids_excluidos:
-                    puzzles_disponibles.append({
-                        "id": id_puzzle,
-                        "fen": fila[1],
-                        "moves": fila[2].split(" "),
-                        "rating": int(fila[3]),
-                        "popularity": int(fila[5]),
-                        "themes": fila[7]
-                    })
+                    id_puzzle = fila[0]
+                    if id_puzzle not in ids_excluidos:
+                        puzzles_disponibles.append({
+                            "id": id_puzzle,
+                            "fen": fila[1],
+                            "moves": fila[2].split(" "),
+                            "rating": int(fila[3]) if fila[3].isdigit() else 1000,
+                            "popularity": int(fila[5]) if fila[5].isdigit() else 100,
+                            "themes": fila[7]
+                        })
+        except Exception as e:
+            print(f"ERROR: Fallo al leer el CSV de práctica: {e}")
+            return {}
 
         if not puzzles_disponibles:
             return None
