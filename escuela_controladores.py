@@ -8,6 +8,7 @@ from kivy.uix.gridlayout import GridLayout
 from kivy.uix.behaviors import ButtonBehavior
 from kivy.uix.button import Button
 from kivy.uix.image import Image
+from kivy.uix.label import Label
 from kivy.uix.relativelayout import RelativeLayout
 from kivy.uix.anchorlayout import AnchorLayout
 from kivy.properties import StringProperty, BooleanProperty
@@ -496,8 +497,8 @@ class PantallaVisorUnidad(Screen):
         """
         Avanza en el temario o detona la emboscada táctica interactiva.
 
-        Verifica si el diccionario activo contiene un puzle cargado. Si es así,
-        inyecta los mensajes de feedback dinámicos hacia el motor principal.
+        Usurpa el controlador maestro si el papiro digital se ha consumido por completo
+        para encadenar automáticamente el siguiente fragmento capitular.
         """
         pagina_actual = self.paginas[self.indice_pagina]
 
@@ -511,6 +512,11 @@ class PantallaVisorUnidad(Screen):
             if self.indice_pagina < len(self.paginas) - 1:
                 self.indice_pagina += 1
                 self.mostrar_pagina()
+            else:
+                from kivy.app import App
+                app = App.get_running_app()
+                menu = app.sm.get_screen('menu_leccion')
+                menu.avanzar_siguiente_capitulo()
 
     def volver_unidades(self) -> None:
         """Ejecuta una retirada estratégica hacia el menú de disección de la lección."""
@@ -934,38 +940,60 @@ class ControladorMiniInteractivo:
             self.paso_actual += 1
             self.actualizar_piezas()
 
+
 class PantallaMenuLeccion(Screen):
     """
     Controlador gráfico para el submenú de una lección específica.
 
-    Actúa como un nodo de bifurcación dentro del patrón MVC. Presenta al
-    jugador las opciones de teoría, ejemplos y práctica aislando la
-    navegación del listado general de unidades.
+    Presenta al jugador las opciones iniciales y muta dinámicamente para desplegar
+    capítulos teóricos paginados. Actúa como el Controlador puro en el patrón MVC.
     """
 
     def __init__(self, **kwargs) -> None:
-        """Inicializa las variables de estado en memoria."""
+        """Inicializa las variables de estado relativas a la paginación de la vista."""
         super().__init__(**kwargs)
         self.id_leccion = ""
         self.titulo_leccion = ""
+        self.texto_crudo_teoria = ""
+        self.capitulos_extraidos = []
+
+        self.pagina_actual_capitulos = 0
+        self.elementos_por_pagina = 6
 
     def cargar_leccion(self, id_leccion: str, titulo: str, titulo_tema: str,
                        tiene_ejemplos: bool = True, tiene_practica: bool = True) -> None:
-        """Forja las tarjetas (Card UI) y formatea el título con múltiples líneas."""
+        """
+        Forja las tarjetas principales de la lección e inyecta la jerarquía de texto.
+
+        Args:
+            id_leccion (str): Identificador unívoco del archivo teórico.
+            titulo (str): Título amigable para consumo humano.
+            titulo_tema (str): Categoría padre para el breadcrumb visual.
+            tiene_ejemplos (bool): Bandera de inyección del botón de ejemplos.
+            tiene_practica (bool): Bandera de inyección del botón de ejercicios.
+        """
         self.id_leccion = id_leccion
         self.titulo_leccion = titulo
 
-        # Inyección del texto con jerarquía. Kivy envolverá esto gracias a nuestro KV.
         texto_formateado = f"[b]{titulo_tema.upper()}\n[size=16sp]Leccion: {titulo}[/size][/b]"
         self.ids.lbl_titulo_leccion.text = texto_formateado
 
+        self.dibujar_menu_principal(tiene_ejemplos, tiene_practica)
+
+    def dibujar_menu_principal(self, tiene_ejemplos: bool, tiene_practica: bool) -> None:
+        """
+        Pinta los botones raíz del menú de lección y purga la vista previa.
+
+        Args:
+            tiene_ejemplos (bool): Condicional estructural de tácticas.
+            tiene_practica (bool): Condicional estructural de test.
+        """
         contenedor = self.ids.grid_partes
         contenedor.clear_widgets()
 
-        # Usamos tu maravillosa clase FilaParteLeccion en lugar de asquerosos Buttons
         btn_teoria = FilaParteLeccion()
         btn_teoria.texto_parte = "1. Teoría"
-        btn_teoria.bind(on_release=lambda x: self.abrir_teoria())
+        btn_teoria.bind(on_release=lambda x: self.desplegar_capitulos_teoria())
         contenedor.add_widget(btn_teoria)
 
         if tiene_ejemplos:
@@ -980,20 +1008,169 @@ class PantallaMenuLeccion(Screen):
             btn_practica.bind(on_release=lambda x: self.abrir_practica())
             contenedor.add_widget(btn_practica)
 
-    def abrir_teoria(self) -> None:
-        """Fuerza la lectura del contenido teórico redirigiendo al visor."""
+    def desplegar_capitulos_teoria(self) -> None:
+        """
+        Lee el papiro digital y secuestra la interfaz para mostrar el desglose.
+
+        Busca anclas Markdown de nivel dos en disco. Prepara el estado interno para
+        la paginación gráfica en RAM.
+        """
         app = App.get_running_app()
         pantalla_unidades = app.sm.get_screen('escuela_unidades')
-        pantalla_unidades.abrir_visor_teoria(self.id_leccion, self.titulo_leccion)
+
+        datos_archivos = pantalla_unidades.ARCHIVOS_LECCIONES.get(self.id_leccion, {})
+        nombre_archivo = datos_archivos.get("teoria", f"{self.id_leccion}_contenido.txt")
+        ruta_archivo = os.path.join('lecciones', nombre_archivo)
+
+        if not os.path.exists(ruta_archivo):
+            print("ERROR: Archivo no forjado en el disco físico.")
+            return
+
+        with open(ruta_archivo, 'r', encoding='utf-8') as archivo:
+            self.texto_crudo_teoria = archivo.read()
+
+        texto_normalizado = f"\n{self.texto_crudo_teoria}"
+        fragmentos = texto_normalizado.split('\n## ')
+        self.capitulos_extraidos = []
+
+        intro_cruda = fragmentos[0].strip()
+        if intro_cruda:
+            self.capitulos_extraidos.append(("Introducción", intro_cruda))
+
+        for frag in fragmentos[1:]:
+            lineas = frag.split('\n', 1)
+            titulo_cap = lineas[0].strip()
+            contenido = f"## {frag}" if len(lineas) > 1 else f"## {titulo_cap}"
+            self.capitulos_extraidos.append((titulo_cap, contenido))
+
+        self.pagina_actual_capitulos = 0
+        self.renderizar_pagina_capitulos()
+
+    def renderizar_pagina_capitulos(self) -> None:
+        """
+        Inyecta un subconjunto de botones en la interfaz basándose en el estado.
+
+        Genera dinámicamente controles de navegación inferior instanciando widgets
+        estáticos en un contenedor aislado para eludir las limitaciones del scroll.
+        """
+        contenedor = self.ids.grid_partes
+        contenedor.clear_widgets()
+
+        caja_nav = self.ids.caja_paginacion
+        caja_nav.clear_widgets()
+
+        inicio = self.pagina_actual_capitulos * self.elementos_por_pagina
+        fin = inicio + self.elementos_por_pagina
+        capitulos_pagina = self.capitulos_extraidos[inicio:fin]
+
+        for indice_relativo, (titulo_cap, contenido_cap) in enumerate(capitulos_pagina):
+            indice_absoluto = inicio + indice_relativo
+            btn_cap = FilaParteLeccion()
+            btn_cap.texto_parte = titulo_cap
+            # Pasamos la posición exacta en memoria aniquilando la inyección de strings
+            btn_cap.bind(
+                on_release=lambda x, idx=indice_absoluto: self.abrir_visor_fragmentado(idx))
+            contenedor.add_widget(btn_cap)
+
+        total_paginas = (len(self.capitulos_extraidos) - 1) // self.elementos_por_pagina + 1
+
+        if total_paginas > 1:
+            from kivy.uix.button import Button
+            from kivy.uix.label import Label
+
+            btn_prev = Button(
+                text="< ANT",
+                font_name='Michroma',
+                background_color=[0.2, 0.6, 0.8, 1],
+                background_normal='assets/ui/button.png',
+                background_down='assets/ui/button_down.png',
+                border=(0, 0, 0, 0),
+                bold=True,
+                disabled=(self.pagina_actual_capitulos == 0)
+            )
+            btn_prev.bind(on_release=lambda x: self.cambiar_pagina_capitulos(-1))
+
+            lbl_pag = Label(
+                text=f"{self.pagina_actual_capitulos + 1} / {total_paginas}",
+                font_name='Michroma',
+                color=[0.1, 0.5, 0.6, 1],
+                bold=True
+            )
+
+            btn_next = Button(
+                text="SIG >",
+                font_name='Michroma',
+                background_color=[0.2, 0.8, 0.4, 1],
+                background_normal='assets/ui/button.png',
+                background_down='assets/ui/button_down.png',
+                border=(0, 0, 0, 0),
+                bold=True,
+                disabled=(self.pagina_actual_capitulos == total_paginas - 1)
+            )
+            btn_next.bind(on_release=lambda x: self.cambiar_pagina_capitulos(1))
+
+            caja_nav.add_widget(btn_prev)
+            caja_nav.add_widget(lbl_pag)
+            caja_nav.add_widget(btn_next)
+
+    def cambiar_pagina_capitulos(self, delta: int) -> None:
+        """
+        Altera la posición del puntero de memoria y fuerza una reconstrucción.
+
+        Args:
+            delta (int): Escalar de desplazamiento de vista (-1 o 1).
+        """
+        self.pagina_actual_capitulos += delta
+        self.renderizar_pagina_capitulos()
+
+    def abrir_visor_fragmentado(self, indice_capitulo: int) -> None:
+        """
+        Inyecta el fragmento aislado y despierta la vista de lectura.
+
+        Args:
+            indice_capitulo (int): Coordenada exacta en el array de capítulos.
+        """
+        from kivy.app import App
+
+        self.indice_capitulo_actual = indice_capitulo
+        titulo_capitulo, contenido = self.capitulos_extraidos[indice_capitulo]
+
+        app = App.get_running_app()
+        pantalla_visor = app.sm.get_screen('escuela_visor')
+        pantalla_visor.cargar_contenido(self.id_leccion, self.titulo_leccion, contenido)
+        app.sm.current = 'escuela_visor'
+
+    def avanzar_siguiente_capitulo(self) -> bool:
+        """
+        Fuerza la carga del siguiente bloque de texto en el motor gráfico.
+
+        Sincroniza la paginación oculta en segundo plano para que el usuario
+        no pierda su posición si decide volver al índice.
+
+        Returns:
+            bool: Verdadero si la mutación tuvo éxito. Falso si chocamos contra el muro final.
+        """
+        if hasattr(self, 'indice_capitulo_actual') and self.indice_capitulo_actual < len(
+                self.capitulos_extraidos) - 1:
+            siguiente_indice = self.indice_capitulo_actual + 1
+            self.abrir_visor_fragmentado(siguiente_indice)
+
+            nueva_pagina = siguiente_indice // self.elementos_por_pagina
+            if nueva_pagina != self.pagina_actual_capitulos:
+                self.pagina_actual_capitulos = nueva_pagina
+                self.renderizar_pagina_capitulos()
+
+            return True
+        return False
 
     def abrir_ejemplos(self) -> None:
-        """Despliega la simulación interactiva de patrones tácticos."""
+        """Despliega la simulación visual."""
         print("Stub: Cargar minitableros interactivos de ejemplos")
 
     def abrir_practica(self) -> None:
-        """Lanza los desafíos evaluables de la unidad actual."""
+        """Activa el motor de ejercicios lógicos."""
         print("Stub: Cargar motor de validación de práctica")
 
     def volver_unidades(self) -> None:
-        """Ejecuta un retroceso forzado hacia el listado del temario."""
+        """Provoca la rendición y devuelve al menú global."""
         App.get_running_app().sm.current = 'escuela_unidades'

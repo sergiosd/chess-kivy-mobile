@@ -27,6 +27,7 @@ from kivy.uix.button import Button
 from kivy.uix.screenmanager import Screen, ScreenManager
 from kivy.uix.popup import Popup
 from kivy.uix.image import Image
+from kivy.uix.label import Label
 from kivy.core.window import Window
 from kivy.clock import Clock
 from kivy.core.audio import SoundLoader
@@ -920,6 +921,13 @@ class VistaLeccion(BoxLayout):
         self.ids.btn_continuar.disabled = False
 
     def retornar_visor(self) -> None:
+        """
+        Restaura la pantalla de teoría tras sobrevivir a la emboscada táctica.
+
+        Destruye el modo lección y fuerza el salto capitular si el puzzle
+        era el último aliento de la sección actual.
+        """
+        from kivy.app import App
         app = App.get_running_app()
         app.modo_leccion = False
         visor = app.sm.get_screen('escuela_visor')
@@ -927,8 +935,12 @@ class VistaLeccion(BoxLayout):
         if visor.indice_pagina < len(visor.paginas) - 1:
             visor.indice_pagina += 1
             visor.mostrar_pagina()
-
-        app.sm.current = 'escuela_visor'
+            app.sm.current = 'escuela_visor'
+        else:
+            menu = app.sm.get_screen('menu_leccion')
+            exito = menu.avanzar_siguiente_capitulo()
+            if not exito:
+                app.sm.current = 'escuela_visor'
 
     def iluminar_casillas(self) -> None:
         self.limpiar_iluminacion()

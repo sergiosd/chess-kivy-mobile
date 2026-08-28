@@ -276,3 +276,59 @@ class PuzzleManager:
                 f"ERROR: ¡Por la sandalia de un romano! No encuentro la base de datos {self.ruta_csv}.")
 
         return {}
+
+    def obtener_puzzle_practica(self, id_leccion: str, archivo_csv: str,
+                                perfil_usuario: dict) -> dict:
+        """
+        Extrae un puzle aleatorio de una lección específica evitando colisiones.
+
+        Aplica operaciones de conjuntos para purgar los ejercicios consumidos
+        antes de realizar la selección. Garantiza un tiempo de ejecución
+        O(1) en el paso de aleatoriedad.
+
+        Args:
+            id_leccion (str): Identificador de la lección para buscar el historial.
+            archivo_csv (str): Archivo físico que contiene la base de datos local.
+            perfil_usuario (dict): Estado actual del jugador.
+
+        Returns:
+            dict o None: Puzle formateado para el motor de ajedrez. None si se agotaron.
+        """
+        import os
+        import csv
+        import random
+
+        ruta_completa = os.path.join('lecciones', archivo_csv)
+
+        if not os.path.exists(ruta_completa):
+            return None
+
+        datos_leccion = perfil_usuario.get("practica_lecciones", {}).get(id_leccion, {})
+        ids_excluidos = set(datos_leccion.get("resueltos", [])) | set(
+            datos_leccion.get("fallados", []))
+
+        puzzles_disponibles = []
+
+        with open(ruta_completa, mode='r', encoding='utf-8') as archivo:
+            lector_csv = csv.reader(archivo)
+            next(lector_csv, None)
+
+            for fila in lector_csv:
+                if len(fila) < 8:
+                    continue
+
+                id_puzzle = fila[0]
+                if id_puzzle not in ids_excluidos:
+                    puzzles_disponibles.append({
+                        "id": id_puzzle,
+                        "fen": fila[1],
+                        "moves": fila[2].split(" "),
+                        "rating": int(fila[3]),
+                        "popularity": int(fila[5]),
+                        "themes": fila[7]
+                    })
+
+        if not puzzles_disponibles:
+            return None
+
+        return random.choice(puzzles_disponibles)

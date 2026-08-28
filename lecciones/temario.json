@@ -22,7 +22,7 @@
         "tac_02": {
             "teoria": "tactica_doble_teoria.txt",
             "ejemplos": null,
-            "practica": null
+            "practica": "doble_db_puzzle.csv"
         }
     }
 }

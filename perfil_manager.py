@@ -98,7 +98,9 @@ class PerfilManager:
             "resueltos": [],
             "partidas_jugadas": 0,
             "escala_pop": 0,
-            "victorias_100": 0
+            "victorias_100": 0,
+            "progreso_escuela": {},
+            "practica_lecciones": {}
         }
 
     def guardar_perfil(self, perfil_dict: dict) -> None:
@@ -115,6 +117,27 @@ class PerfilManager:
             json.dump(perfil_dict, f, indent=4)
 
         self.fijar_ultimo_usuario(nombre)
+
+    def inicializar_practica_leccion(self, perfil: dict, id_leccion: str) -> None:
+        """
+        Inyecta la estructura de datos obligatoria para una lección específica.
+
+        Modifica el diccionario en memoria. Debes llamar a guardar_perfil()
+        posteriormente para persistir el estado.
+
+        Args:
+            perfil (dict): Diccionario en memoria del usuario activo.
+            id_leccion (str): Identificador de la unidad didáctica.
+        """
+        if "practica_lecciones" not in perfil:
+            perfil["practica_lecciones"] = {}
+
+        if id_leccion not in perfil["practica_lecciones"]:
+            perfil["practica_lecciones"][id_leccion] = {
+                "elo": 1000,
+                "resueltos": [],
+                "fallados": []
+            }
 
 
 
