@@ -23,13 +23,15 @@
     },
     "practica_lecciones": {
         "tac_02": {
-            "elo": 1067,
+            "elo": 1051,
             "resueltos": [
                 "ffD9E",
                 "fzyJh",
                 "g814M"
             ],
-            "fallados": []
+            "fallados": [
+                "fZjIE"
+            ]
         }
     }
 }

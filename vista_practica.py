@@ -95,10 +95,10 @@ class VistaPracticaLeccion(VistaTablero):
             color_turno = "[color=#ffffff]BLANCAS[/color]" if es_blancas else "[color=#ff6b6b]NEGRAS[/color]"
             self.ids.lbl_estado.text = f"Tu turno: {color_turno}"
 
-            self.ids.lbl_temas.text = "Práctica de Lección"
+            self.ids.lbl_temas.text = "Practica de Leccion"
             self.ids.btn_siguiente.text = "SIGUIENTE PUZZLE"
         else:
-            self.ids.lbl_estado.text = "¡Módulo completado!"
+            self.ids.lbl_estado.text = "¡Modulo completado!"
             self.ids.lbl_estado.color = [0, 1, 0, 1]
             self.ids.btn_siguiente.disabled = True
 
@@ -131,10 +131,10 @@ class VistaPracticaLeccion(VistaTablero):
             elo_local = int(estado_local.get("elo", 1000))
 
             # Subyugamos los IDs visuales inyectando las métricas de la escuela
-            self.ids.lbl_mision.text = f"ELO Lección: {elo_local} | Puzzle ELO: {info.get('rating', '--')}"
+            self.ids.lbl_mision.text = f"ELO Leccion: {elo_local} | Puzzle ELO: {info.get('rating', '--')}"
 
             # Purgamos información irrelevante del panel inferior
-            self.ids.lbl_info.text = f"Táctica ID: {info.get('id', '--')}"
+            self.ids.lbl_info.text = f"Tactica ID: {info.get('id', '--')}"
 
             # Sincronizamos el indicador de turno
             es_blancas = self.gestor_ajedrez.board.turn == chess.WHITE

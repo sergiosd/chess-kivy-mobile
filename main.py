@@ -470,7 +470,7 @@ class VistaTablero(BoxLayout):
                     self.ids.lbl_estado.text = f"[color=#33cc33]{self.msg_correcto}[/color]"
                     self.revelar_boton("Siguiente", [0.2, 0.8, 0.4, 1])
                 else:
-                    self.ids.lbl_estado.text = "¡Tu turno! Continúa."
+                    self.ids.lbl_estado.text = "¡Tu turno! Continua."
 
             self.animar_pieza(origen, destino, simbolo, terminar_animacion_ia)
 
@@ -486,7 +486,7 @@ class VistaTablero(BoxLayout):
             # Inyección de temas
             self.mostrar_temas_traducidos()
         else:
-            self.ids.lbl_estado.text = "¡Tu turno! Continúa."
+            self.ids.lbl_estado.text = "¡Tu turno! Continua."
             self.ids.lbl_estado.color = [0.9, 0.9, 0.9, 1]
 
     def iluminar_casillas(self):
@@ -903,7 +903,7 @@ class VistaLeccion(BoxLayout):
                     self.ids.lbl_estado.text = f"[color=#33cc33]{self.msg_correcto}[/color]"
                     self.revelar_boton("Siguiente", [0.2, 0.8, 0.4, 1])
                 else:
-                    self.ids.lbl_estado.text = "¡Tu turno! Continúa."
+                    self.ids.lbl_estado.text = "¡Tu turno! Continua."
 
             if LOG_DEBUG:
                 log.info(f"Disparando self.animar_pieza para el símbolo '{simbolo}'")
