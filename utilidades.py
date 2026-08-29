@@ -41,7 +41,7 @@ class CalculadorElo:
 class CalculadorRatingTactico:
     """Gestiona el rating 0–100 de la práctica de cada lección."""
 
-    K = 5.0
+    K = 10.0
     ESCALA_PROBABILIDAD = 20.0
 
     DIFICULTAD_POR_PLIES = {
@@ -127,12 +127,24 @@ class CalculadorRatingTactico:
         if rating <= 40:
             return {"4": 80, "6": 20}
         if rating <= 60:
-            return {"4": 60, "6": 35, "8": 5}
+            return {"4": 70, "6": 30}
         if rating <= 80:
-            return {"4": 45, "6": 40, "8": 10, "10+": 5}
+            return {"4": 60, "6": 40, "8": 10, "10+": 5}
         if rating < 95:
-            return {"4": 30, "6": 45, "8": 20, "10+": 5}
-        return {"4": 20, "6": 40, "8": 30, "10+": 10}
+            return {"4": 50, "6": 50, "8": 20, "10+": 5}
+        return {"4": 33, "6": 50, "8+": 17}
+
+    @staticmethod
+    def obtener_dificultad_visible(plies: int) -> str:
+        """Devuelve la dificultad visible del puzzle segun su longitud."""
+        plies = max(0, int(plies))
+        if plies <= 4:
+            return "PUZZLE NORMAL"
+        if plies <= 6:
+            return "PUZZLE DIFICIL"
+        if plies <= 8:
+            return "PUZZLE MUY DIFICIL"
+        return "PUZZLE DE MAESTRO"
 
 def compilar_markdown_a_kivy(texto: str) -> str:
     """

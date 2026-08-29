@@ -334,9 +334,9 @@ class PuzzleManager:
                     elif plies == 6:
                         grupo = "6"
                     elif plies == 8:
-                        grupo = "8"
+                        grupo = "8+" if "8+" in puzzles_por_grupo else "8"
                     elif plies >= 10:
-                        grupo = "10+"
+                        grupo = "8+" if "8+" in puzzles_por_grupo else "10+"
                     else:
                         continue
 

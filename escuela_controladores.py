@@ -2,6 +2,7 @@ import os
 import math
 import chess
 import json
+import unicodedata
 from kivy.uix.screenmanager import Screen
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.gridlayout import GridLayout
@@ -19,6 +20,16 @@ from kivy.graphics import Color, Rectangle, Line, Triangle
 from kivy.clock import Clock
 
 from utilidades import compilar_markdown_a_kivy
+
+
+def texto_sin_acentos(texto: str) -> str:
+    """Devuelve texto visible sin marcas diacriticas."""
+    normalizado = unicodedata.normalize("NFD", texto or "")
+    return "".join(
+        caracter
+        for caracter in normalizado
+        if unicodedata.category(caracter) != "Mn"
+    )
 
 
 
@@ -72,7 +83,7 @@ class PantallaEscuelaUnidades(Screen):
             'tactica': 'TACTICA',
             'mates': 'MATES IMPRESCINDIBLES',
             'finales': 'FINALES DE PEONES',
-            'aperturas': 'APERTURAS BÁSICAS'
+            'aperturas': 'APERTURAS BASICAS'
         }
         titulo_limpio = nombres_temas.get(id_tema, id_tema.upper())
 
@@ -90,7 +101,7 @@ class PantallaEscuelaUnidades(Screen):
             fila = FilaUnidadEscuela(
                 id_unidad=id_leccion,
                 controlador=self,
-                texto_unidad=titulo
+                texto_unidad=texto_sin_acentos(titulo)
             )
             fila.completada = estado_completado
             self.ids.grid_unidades.add_widget(fila)
@@ -283,10 +294,10 @@ class PantallaEscuelaTemas(Screen):
 
         # Mapeo de identificadores a títulos legibles con tildes UTF-8
         nombres_temas = {
-            'tactica': 'Táctica',
+            'tactica': 'Tactica',
             'mates': 'Mates Imprescindibles',
             'finales': 'Finales de Peones',
-            'aperturas': 'Aperturas Básicas'
+            'aperturas': 'Aperturas Basicas'
         }
 
         # Generamos dinámicamente cada fila interactiva dentro del panel único
@@ -302,7 +313,7 @@ class PantallaEscuelaTemas(Screen):
             porcentaje = int((completadas / total * 100)) if total > 0 else 0
 
             fila = Factory.FilaTemaProgreso()
-            fila.texto_tema = titulo
+            fila.texto_tema = texto_sin_acentos(titulo)
             fila.porcentaje = porcentaje
             fila.id_tema = id_tema
             fila.controlador = self
@@ -975,7 +986,12 @@ class PantallaMenuLeccion(Screen):
         self.id_leccion = id_leccion
         self.titulo_leccion = titulo
 
-        texto_formateado = f"[b]{titulo_tema.upper()}\n[size=16sp]Leccion: {titulo}[/size][/b]"
+        titulo_tema_visible = texto_sin_acentos(titulo_tema).upper()
+        titulo_visible = texto_sin_acentos(titulo)
+        texto_formateado = (
+            f"[b]{titulo_tema_visible}\n"
+            f"[size=16sp]Leccion: {titulo_visible}[/size][/b]"
+        )
         self.ids.lbl_titulo_leccion.text = texto_formateado
 
         self.dibujar_menu_principal(tiene_ejemplos, tiene_practica)
@@ -992,19 +1008,19 @@ class PantallaMenuLeccion(Screen):
         contenedor.clear_widgets()
 
         btn_teoria = FilaParteLeccion()
-        btn_teoria.texto_parte = "1. Teoría"
+        btn_teoria.texto_parte = "Teoria"
         btn_teoria.bind(on_release=lambda x: self.desplegar_capitulos_teoria())
         contenedor.add_widget(btn_teoria)
 
         if tiene_ejemplos:
             btn_ejemplos = FilaParteLeccion()
-            btn_ejemplos.texto_parte = "2. Ejemplos"
+            btn_ejemplos.texto_parte = "Ejemplos"
             btn_ejemplos.bind(on_release=lambda x: self.abrir_ejemplos())
             contenedor.add_widget(btn_ejemplos)
 
         if tiene_practica:
             btn_practica = FilaParteLeccion()
-            btn_practica.texto_parte = "3. Práctica"
+            btn_practica.texto_parte = "Practica"
             btn_practica.bind(on_release=lambda x: self.abrir_practica())
             contenedor.add_widget(btn_practica)
 
@@ -1035,7 +1051,7 @@ class PantallaMenuLeccion(Screen):
 
         intro_cruda = fragmentos[0].strip()
         if intro_cruda:
-            self.capitulos_extraidos.append(("Introducción", intro_cruda))
+            self.capitulos_extraidos.append(("Introduccion", intro_cruda))
 
         for frag in fragmentos[1:]:
             lineas = frag.split('\n', 1)
@@ -1066,7 +1082,7 @@ class PantallaMenuLeccion(Screen):
         for indice_relativo, (titulo_cap, contenido_cap) in enumerate(capitulos_pagina):
             indice_absoluto = inicio + indice_relativo
             btn_cap = FilaParteLeccion()
-            btn_cap.texto_parte = titulo_cap
+            btn_cap.texto_parte = texto_sin_acentos(titulo_cap)
             # Pasamos la posición exacta en memoria aniquilando la inyección de strings
             btn_cap.bind(
                 on_release=lambda x, idx=indice_absoluto: self.abrir_visor_fragmentado(idx))

@@ -75,10 +75,12 @@ class VistaPracticaLeccion(VistaTablero):
         super().mostrar_temas_traducidos()
         temas = self._texto_sin_acentos(self.ids.lbl_temas.text).upper().strip()
 
+        dificultad_visible = CalculadorRatingTactico.obtener_dificultad_visible(plies)
+
         lineas = []
         if temas:
             lineas.append(temas)
-        lineas.append(f"RATING: {rating_local:.1f}")
+        lineas.append(f"RATING: {rating_local:.1f} · {dificultad_visible}")
         lineas.append(f"PUZZLE: {plies} PLIES")
         return "\n".join(lineas)
 
