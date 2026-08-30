@@ -1,6 +1,6 @@
 {
     "nombre": "john",
-    "elo": 382,
+    "elo": 319,
     "resueltos": [
         "0irLv",
         "0nQDT",
@@ -14,8 +14,8 @@
         "0d7gs",
         "074Ca"
     ],
-    "partidas_jugadas": 21,
-    "escala_pop": 4,
+    "partidas_jugadas": 25,
+    "escala_pop": 0,
     "victorias_100": 0,
     "progreso_escuela": {
         "tac_01": true,
@@ -73,7 +73,10 @@
                 "AGEgz",
                 "AcQSK",
                 "BJ3nI",
-                "BE6yO"
+                "BE6yO",
+                "Ad1Cy",
+                "BL0tg",
+                "AAUSQ"
             ],
             "fallados": [
                 "fZjIE",
@@ -88,9 +91,13 @@
                 "A9JZ1",
                 "AM7Bd",
                 "Aftj8",
-                "AdOWY"
+                "AdOWY",
+                "Aok84",
+                "AAD5Z",
+                "B6xUm",
+                "BHuGq"
             ],
-            "rating": 35.50212760701825
+            "rating": 18.896692652973883
         }
     }
 }

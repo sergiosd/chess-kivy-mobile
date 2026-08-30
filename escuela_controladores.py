@@ -398,13 +398,25 @@ class PantallaVisorUnidad(Screen):
         self.paginas = []
         self.indice_pagina = 0
 
-    def cargar_contenido(self, id_leccion: str, titulo: str, texto: str) -> None:
+    def cargar_contenido(
+        self,
+        id_leccion: str,
+        titulo: str,
+        texto: str,
+        ultima_pagina: bool = False,
+    ) -> None:
         """
         Disecciona el papiro digital separando teoría, tácticas y mensajes de feedback.
 
         Escanea implacablemente buscando las etiquetas de resolución.
         Frena el análisis al detectar el ancla [FIN] para reanudar el flujo
         normal de la lección sin contaminar la interfaz.
+
+        Args:
+            id_leccion: Identificador de la lección activa.
+            titulo: Título visible de la lección.
+            texto: Contenido del capítulo que debe paginarse.
+            ultima_pagina: Si es verdadero, abre el capítulo por su última página.
         """
         self.id_leccion_actual = id_leccion
         self.ids.lbl_titulo.text = f"[b]{titulo.upper()}[/b]"
@@ -463,6 +475,9 @@ class PantallaVisorUnidad(Screen):
                 if bloque.strip():
                     self.paginas.append({'texto': bloque.strip(), 'puzzle': None})
 
+        if ultima_pagina and self.paginas:
+            self.indice_pagina = len(self.paginas) - 1
+
         self.mostrar_pagina()
 
     def mostrar_pagina(self) -> None:
@@ -499,10 +514,15 @@ class PantallaVisorUnidad(Screen):
             pantalla_unidades.registrar_progreso(self.id_leccion_actual, True)
 
     def pagina_anterior(self) -> None:
-        """Resta el contador de página y redibuja la vista gráfica."""
+        """Retrocede una página o salta al final del capítulo anterior."""
         if self.indice_pagina > 0:
             self.indice_pagina -= 1
             self.mostrar_pagina()
+            return
+
+        app = App.get_running_app()
+        menu = app.sm.get_screen('menu_leccion')
+        menu.retroceder_capitulo_anterior()
 
     def pagina_siguiente(self) -> None:
         """
@@ -574,7 +594,7 @@ class PantallaVisorUnidad(Screen):
         solucion_uci = []
 
         mapa_resaltes = {'g': (0.2, 0.8, 0.2, 0.5), 'r': (0.8, 0.2, 0.2, 0.5)}
-        mapa_lineas = {'g': (0.2, 0.8, 0.2, 0.85), 'r': (0.8, 0.2, 0.2, 0.85)}
+        mapa_lineas = {'g': (0.2, 0.8, 0.2, 0.58), 'r': (0.8, 0.2, 0.2, 0.58)}
 
         for tramo in tramos[1:]:
             tramo = tramo.strip()
@@ -591,7 +611,7 @@ class PantallaVisorUnidad(Screen):
                         mov, c = d.strip().split('-')
                         mov = mov.strip()
                         if len(mov) >= 4:
-                            flechas_vectores.append((mov[:2], mov[2:4], mapa_lineas.get(c.strip().lower(), (0.2, 0.8, 0.2, 0.85))))
+                            flechas_vectores.append((mov[:2], mov[2:4], mapa_lineas.get(c.strip().lower(), (0.2, 0.8, 0.2, 0.58))))
             elif tramo.startswith('SOL:'):
                 datos = tramo[4:].split(',')
                 solucion_uci = [mov.strip() for mov in datos if mov.strip()]
@@ -599,9 +619,16 @@ class PantallaVisorUnidad(Screen):
         envoltorio = Factory.ContenedorTableroMini()
         cuadricula = envoltorio.ids.grid
 
+        controlador_mini = None
+        tablero = None
+
         try:
             if solucion_uci:
-                ControladorMiniInteractivo(cuadricula, fen_real, solucion_uci)
+                controlador_mini = ControladorMiniInteractivo(
+                    cuadricula,
+                    fen_real,
+                    solucion_uci,
+                )
             else:
                 tablero = chess.Board(fen_real)
                 for fila in range(7, -1, -1):
@@ -616,18 +643,23 @@ class PantallaVisorUnidad(Screen):
             return
 
         def redibujar_anotaciones(instancia, valor) -> None:
-            """Callback forzado que recalcula los píxeles absolutos cuando Kivy respira."""
+            """Redibuja anotaciones bajo las piezas respetando el tamaño del tablero."""
             instancia.canvas.after.clear()
+
             with instancia.canvas.after:
                 sq_w = instancia.width / 8.0
                 sq_h = instancia.height / 8.0
 
+                # Resaltes y flechas quedan por encima de las casillas.
                 for cas, col_rgba in colores_casillas:
                     idx = chess.parse_square(cas)
                     f = chess.square_file(idx)
                     r = chess.square_rank(idx)
                     Color(*col_rgba)
-                    Rectangle(pos=(instancia.x + f * sq_w, instancia.y + r * sq_h), size=(sq_w, sq_h))
+                    Rectangle(
+                        pos=(instancia.x + f * sq_w, instancia.y + r * sq_h),
+                        size=(sq_w, sq_h),
+                    )
 
                 for origen, destino, col_rgba in flechas_vectores:
                     idx_o = chess.parse_square(origen)
@@ -641,15 +673,74 @@ class PantallaVisorUnidad(Screen):
                     Color(*col_rgba)
                     Line(points=[x1, y1, x2, y2], width=dp(3))
 
+                    # Punta más ancha que la anterior, calculada de forma explícita.
                     angulo = math.atan2(y2 - y1, x2 - x1)
-                    l_punta = dp(14)
+                    largo_punta = dp(16)
+                    medio_ancho_punta = dp(11)
+
+                    base_x = x2 - largo_punta * math.cos(angulo)
+                    base_y = y2 - largo_punta * math.sin(angulo)
+                    perpendicular_x = -math.sin(angulo)
+                    perpendicular_y = math.cos(angulo)
+
                     p1 = (x2, y2)
-                    p2 = (x2 - l_punta * math.cos(angulo - math.pi / 6.0), y2 - l_punta * math.sin(angulo - math.pi / 6.0))
-                    p3 = (x2 - l_punta * math.cos(angulo + math.pi / 6.0), y2 - l_punta * math.sin(angulo + math.pi / 6.0))
-                    Triangle(points=[p1[0], p1[1], p2[0], p2[1], p3[0], p3[1]])
+                    p2 = (
+                        base_x + medio_ancho_punta * perpendicular_x,
+                        base_y + medio_ancho_punta * perpendicular_y,
+                    )
+                    p3 = (
+                        base_x - medio_ancho_punta * perpendicular_x,
+                        base_y - medio_ancho_punta * perpendicular_y,
+                    )
+                    Triangle(
+                        points=[
+                            p1[0], p1[1],
+                            p2[0], p2[1],
+                            p3[0], p3[1],
+                        ]
+                    )
+
+                # Las piezas se repintan al final para que ninguna flecha las tape.
+                if colores_casillas or flechas_vectores:
+                    tablero_visible = (
+                        controlador_mini.board
+                        if controlador_mini is not None
+                        else tablero
+                    )
+                    if tablero_visible is not None:
+                        Color(1, 1, 1, 1)
+                        escala_pieza = 0.85
+                        ancho_pieza = sq_w * escala_pieza
+                        alto_pieza = sq_h * escala_pieza
+                        margen_x = (sq_w - ancho_pieza) / 2.0
+                        margen_y = (sq_h - alto_pieza) / 2.0
+
+                        for indice, pieza in tablero_visible.piece_map().items():
+                            ruta = mapa_imagenes.get(pieza.symbol(), '')
+                            if not ruta:
+                                continue
+
+                            f = chess.square_file(indice)
+                            r = chess.square_rank(indice)
+                            Rectangle(
+                                source=ruta,
+                                pos=(
+                                    instancia.x + f * sq_w + margen_x,
+                                    instancia.y + r * sq_h + margen_y,
+                                ),
+                                size=(ancho_pieza, alto_pieza),
+                            )
+
+        if controlador_mini is not None:
+            controlador_mini.al_actualizar_tablero = (
+                lambda: redibujar_anotaciones(cuadricula, None)
+            )
 
         cuadricula.bind(pos=redibujar_anotaciones, size=redibujar_anotaciones)
-        Clock.schedule_once(lambda dt: redibujar_anotaciones(cuadricula, None), 0.1)
+        Clock.schedule_once(
+            lambda dt: redibujar_anotaciones(cuadricula, None),
+            0.1,
+        )
 
     def volver_unidades(self) -> None:
         """Abandona la clase magistral y huye hacia el índice de unidades."""
@@ -776,6 +867,7 @@ class TableroInteractivoLeccion(GridLayout):
         self.paso_actual = 0
         self.casilla_seleccionada = None
         self.diccionario_casillas = {}
+        self.al_actualizar_tablero = None
 
         self.mapa_imagenes = {
             'P': 'assets/pieces/blanco_peon.png', 'p': 'assets/pieces/negro_peon.png',
@@ -937,6 +1029,9 @@ class ControladorMiniInteractivo:
             pieza = self.board.piece_at(chess.parse_square(nombre))
             ruta = self.mapa_imagenes.get(pieza.symbol(), '') if pieza else ''
             widget.actualizar_imagen(ruta)
+
+        if self.al_actualizar_tablero is not None:
+            self.al_actualizar_tablero()
 
     def respuesta_enemiga(self, dt: float) -> None:
         """
@@ -1139,12 +1234,17 @@ class PantallaMenuLeccion(Screen):
         self.pagina_actual_capitulos += delta
         self.renderizar_pagina_capitulos()
 
-    def abrir_visor_fragmentado(self, indice_capitulo: int) -> None:
+    def abrir_visor_fragmentado(
+        self,
+        indice_capitulo: int,
+        ultima_pagina: bool = False,
+    ) -> None:
         """
         Inyecta el fragmento aislado y despierta la vista de lectura.
 
         Args:
-            indice_capitulo (int): Coordenada exacta en el array de capítulos.
+            indice_capitulo: Coordenada exacta en el array de capítulos.
+            ultima_pagina: Si es verdadero, abre el capítulo por su última página.
         """
         from kivy.app import App
 
@@ -1153,8 +1253,34 @@ class PantallaMenuLeccion(Screen):
 
         app = App.get_running_app()
         pantalla_visor = app.sm.get_screen('escuela_visor')
-        pantalla_visor.cargar_contenido(self.id_leccion, self.titulo_leccion, contenido)
+        pantalla_visor.cargar_contenido(
+            self.id_leccion,
+            self.titulo_leccion,
+            contenido,
+            ultima_pagina=ultima_pagina,
+        )
         app.sm.current = 'escuela_visor'
+
+    def retroceder_capitulo_anterior(self) -> bool:
+        """Carga el capítulo anterior directamente por su última página."""
+        if not hasattr(self, 'indice_capitulo_actual'):
+            return False
+
+        if self.indice_capitulo_actual <= 0:
+            return False
+
+        anterior_indice = self.indice_capitulo_actual - 1
+        self.abrir_visor_fragmentado(
+            anterior_indice,
+            ultima_pagina=True,
+        )
+
+        nueva_pagina = anterior_indice // self.elementos_por_pagina
+        if nueva_pagina != self.pagina_actual_capitulos:
+            self.pagina_actual_capitulos = nueva_pagina
+            self.renderizar_pagina_capitulos()
+
+        return True
 
     def avanzar_siguiente_capitulo(self) -> bool:
         """
