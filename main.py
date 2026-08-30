@@ -170,7 +170,7 @@ class VistaTablero(BoxLayout):
     y el motor de audio de Kivy[cite: 3].
     """
 
-    def __init__(self, gestor_ajedrez, gestor_puzzles, perfil_actual, gestor_perfiles, **kwargs):
+    def __init__(self, gestor_ajedrez, gestor_puzzles, perfil_actual, gestor_perfiles, habilitar_visor_solucion: bool = True, **kwargs):
         """
         Configura la vista inyectándole todos los módulos lógicos requeridos.
 
@@ -187,6 +187,12 @@ class VistaTablero(BoxLayout):
         self.perfil_actual = perfil_actual
         self.gestor_perfiles = gestor_perfiles
         self.diccionario_casillas = {}
+        self._habilitar_visor_solucion = habilitar_visor_solucion
+        self._modo_solucion_general = False
+        self._tablero_revision_general: chess.Board | None = None
+        self._movimientos_revision_general: list[str] = []
+        self._indice_revision_general = 0
+        self._animacion_solucion_general_activa = False
 
         # Inyección de rutas absolutas para someter al sistema de archivos de Android
         BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -217,6 +223,344 @@ class VistaTablero(BoxLayout):
         }
         self.inicializar_tablero()
         self.actualizar_piezas_visuales()
+        if self._habilitar_visor_solucion:
+            self._configurar_controles_solucion_general()
+
+
+    def _configurar_controles_solucion_general(self) -> None:
+        """Prepara los controles de solución para el modo de puzzles global."""
+        panel = self.ids.panel_inferior
+        indice_original = panel.children.index(self.ids.btn_siguiente)
+
+        # Conservamos una referencia fuerte al sacar el botón del árbol de widgets.
+        self._btn_siguiente_general = panel.children[indice_original]
+        panel.remove_widget(self._btn_siguiente_general)
+
+        self._fila_acciones_general = BoxLayout(
+            orientation="horizontal",
+            size_hint_y=None,
+            height=dp(60),
+            spacing=0,
+        )
+        self._btn_mostrar_solucion_general = Button(
+            text="MOSTRAR SOLUCION",
+            size_hint_x=None,
+            width=0,
+            opacity=0,
+            disabled=True,
+            background_color=(1, 1, 1, 1),
+            background_normal="assets/ui/button.png",
+            background_down="assets/ui/button_down.png",
+            border=(0, 0, 0, 0),
+            bold=True,
+        )
+        self._btn_mostrar_solucion_general.bind(
+            on_release=self.mostrar_solucion_general
+        )
+
+        self._btn_siguiente_general.size_hint_x = 1
+        self._fila_acciones_general.add_widget(self._btn_mostrar_solucion_general)
+        self._fila_acciones_general.add_widget(self._btn_siguiente_general)
+        panel.add_widget(self._fila_acciones_general, index=indice_original)
+
+        self._fila_navegacion_general = BoxLayout(
+            orientation="horizontal",
+            size_hint_y=None,
+            height=dp(48),
+            spacing=dp(8),
+        )
+        self._btn_solucion_anterior_general = Button(
+            text="<",
+            size_hint_x=0.25,
+            background_color=(1, 1, 1, 1),
+            background_normal="assets/ui/button.png",
+            background_down="assets/ui/button_down.png",
+            border=(0, 0, 0, 0),
+            bold=True,
+        )
+        self._btn_solucion_anterior_general.bind(
+            on_release=self.retroceder_solucion_general
+        )
+
+        self._lbl_paso_solucion_general = Label(
+            text="INICIO",
+            size_hint_x=0.5,
+            font_size="16sp",
+            bold=True,
+            color=(0.95, 0.95, 0.95, 1),
+            halign="center",
+            valign="middle",
+        )
+        self._lbl_paso_solucion_general.bind(
+            size=lambda instance, size: setattr(instance, "text_size", size)
+        )
+
+        self._btn_solucion_siguiente_general = Button(
+            text=">",
+            size_hint_x=0.25,
+            background_color=(1, 1, 1, 1),
+            background_normal="assets/ui/button.png",
+            background_down="assets/ui/button_down.png",
+            border=(0, 0, 0, 0),
+            bold=True,
+        )
+        self._btn_solucion_siguiente_general.bind(
+            on_release=self.avanzar_solucion_general
+        )
+
+        self._fila_navegacion_general.add_widget(
+            self._btn_solucion_anterior_general
+        )
+        self._fila_navegacion_general.add_widget(
+            self._lbl_paso_solucion_general
+        )
+        self._fila_navegacion_general.add_widget(
+            self._btn_solucion_siguiente_general
+        )
+
+    def _mostrar_acciones_fallo_general(self) -> None:
+        """Muestra el acceso a la solución junto a Siguiente puzzle."""
+        if not self._habilitar_visor_solucion:
+            return
+
+        self._fila_acciones_general.spacing = dp(8)
+        self._btn_mostrar_solucion_general.size_hint_x = 1
+        self._btn_mostrar_solucion_general.opacity = 1
+        self._btn_mostrar_solucion_general.disabled = False
+        self._btn_siguiente_general.size_hint_x = 1
+        self._btn_siguiente_general.text = "SIGUIENTE PUZZLE"
+
+    def _ocultar_boton_solucion_general(self) -> None:
+        """Oculta el botón Mostrar solución."""
+        if not self._habilitar_visor_solucion:
+            return
+
+        self._fila_acciones_general.spacing = 0
+        self._btn_mostrar_solucion_general.size_hint_x = None
+        self._btn_mostrar_solucion_general.width = 0
+        self._btn_mostrar_solucion_general.opacity = 0
+        self._btn_mostrar_solucion_general.disabled = True
+        self._btn_siguiente_general.size_hint_x = 1
+
+    def _restablecer_panel_solucion_general(self) -> None:
+        """Abandona la revisión y restaura el panel normal de puzzles."""
+        if not self._habilitar_visor_solucion:
+            return
+
+        self._modo_solucion_general = False
+        self._tablero_revision_general = None
+        self._movimientos_revision_general = []
+        self._indice_revision_general = 0
+        self._animacion_solucion_general_activa = False
+
+        if self._fila_navegacion_general.parent is not None:
+            self._fila_navegacion_general.parent.remove_widget(
+                self._fila_navegacion_general
+            )
+
+        for etiqueta in (self.ids.lbl_info, self.ids.lbl_temas):
+            etiqueta.size_hint_y = 1
+            etiqueta.opacity = 1
+
+        self._ocultar_boton_solucion_general()
+        self._btn_siguiente_general.disabled = False
+        self._btn_siguiente_general.text = "SIGUIENTE PUZZLE"
+        self.ids.btn_volver.disabled = False
+
+    def mostrar_solucion_general(self, *_args) -> None:
+        """Inicia la reproducción manual de la solución del puzzle fallado."""
+        if (
+            not self._habilitar_visor_solucion
+            or self.gestor_ajedrez.estado_puzzle != "DERROTA"
+        ):
+            return
+
+        info = self.gestor_ajedrez.info_puzzle or {}
+        fen = info.get("fen")
+        movimientos = list(info.get("moves", []))
+        if not fen or not movimientos:
+            return
+
+        tablero_revision = chess.Board(fen)
+        primer_movimiento = chess.Move.from_uci(movimientos[0])
+        if primer_movimiento not in tablero_revision.legal_moves:
+            return
+
+        self._modo_solucion_general = True
+        self._tablero_revision_general = tablero_revision
+        self._movimientos_revision_general = movimientos
+        self._indice_revision_general = 0
+        self._animacion_solucion_general_activa = False
+
+        self.limpiar_iluminacion()
+        self.limpiar_flecha()
+        self._ocultar_boton_solucion_general()
+
+        panel = self.ids.panel_inferior
+        if self._fila_navegacion_general.parent is None:
+            indice = panel.children.index(self._fila_acciones_general) + 1
+            panel.add_widget(self._fila_navegacion_general, index=indice)
+
+        for etiqueta in (self.ids.lbl_info, self.ids.lbl_temas):
+            etiqueta.size_hint_y = None
+            etiqueta.height = 0
+            etiqueta.opacity = 0
+
+        self.ids.lbl_estado.text = "REVISION DE LA SOLUCION"
+        self.ids.lbl_estado.color = [0.1, 0.8, 0.8, 1]
+        self._btn_siguiente_general.text = "SIGUIENTE PUZZLE"
+
+        self._renderizar_tablero_revision_general()
+        self._actualizar_navegacion_solucion_general()
+
+        # Se muestra también la primera jugada de la IA desde el FEN original.
+        self.avanzar_solucion_general()
+
+    def avanzar_solucion_general(self, *_args) -> None:
+        """Anima y avanza un movimiento dentro de la solución."""
+        tablero = self._tablero_revision_general
+        if (
+            not self._modo_solucion_general
+            or tablero is None
+            or self._animacion_solucion_general_activa
+            or self._indice_revision_general
+            >= len(self._movimientos_revision_general)
+        ):
+            return
+
+        movimiento_uci = self._movimientos_revision_general[
+            self._indice_revision_general
+        ]
+        movimiento = chess.Move.from_uci(movimiento_uci)
+        if movimiento not in tablero.legal_moves:
+            self._btn_solucion_siguiente_general.disabled = True
+            self._lbl_paso_solucion_general.text = "ERROR"
+            return
+
+        origen = movimiento_uci[:2]
+        destino = movimiento_uci[2:4]
+        pieza = tablero.piece_at(movimiento.from_square)
+        simbolo = pieza.symbol() if pieza else ""
+        if not simbolo:
+            return
+
+        self.limpiar_flecha()
+        self._bloquear_controles_revision_general(True)
+        self.diccionario_casillas[origen].ruta_pieza = ""
+
+        def terminar_animacion() -> None:
+            """Consolida el movimiento al terminar su animación."""
+            if (
+                not self._modo_solucion_general
+                or self._tablero_revision_general is not tablero
+            ):
+                return
+
+            tablero.push(movimiento)
+            self._indice_revision_general += 1
+            self._renderizar_tablero_revision_general()
+
+            if self.sonido_mover:
+                self.sonido_mover.play()
+
+            self.mostrar_flecha_error(movimiento_uci)
+            self._bloquear_controles_revision_general(False)
+            self._actualizar_navegacion_solucion_general()
+
+        self.animar_pieza(origen, destino, simbolo, terminar_animacion)
+
+    def retroceder_solucion_general(self, *_args) -> None:
+        """Anima hacia atrás el último movimiento mostrado."""
+        tablero = self._tablero_revision_general
+        if (
+            not self._modo_solucion_general
+            or tablero is None
+            or self._animacion_solucion_general_activa
+            or self._indice_revision_general <= 0
+        ):
+            return
+
+        movimiento_uci = self._movimientos_revision_general[
+            self._indice_revision_general - 1
+        ]
+        movimiento = chess.Move.from_uci(movimiento_uci)
+        origen = movimiento_uci[:2]
+        destino = movimiento_uci[2:4]
+
+        pieza = tablero.piece_at(movimiento.to_square)
+        simbolo = pieza.symbol() if pieza else ""
+        if not simbolo:
+            return
+
+        self.limpiar_flecha()
+        self._bloquear_controles_revision_general(True)
+        self.diccionario_casillas[destino].ruta_pieza = ""
+
+        def terminar_animacion() -> None:
+            """Restaura la posición anterior al terminar la animación inversa."""
+            if (
+                not self._modo_solucion_general
+                or self._tablero_revision_general is not tablero
+            ):
+                return
+
+            tablero.pop()
+            self._indice_revision_general -= 1
+            self._renderizar_tablero_revision_general()
+
+            if self.sonido_mover:
+                self.sonido_mover.play()
+
+            if self._indice_revision_general > 0:
+                movimiento_anterior = self._movimientos_revision_general[
+                    self._indice_revision_general - 1
+                ]
+                self.mostrar_flecha_error(movimiento_anterior)
+
+            self._bloquear_controles_revision_general(False)
+            self._actualizar_navegacion_solucion_general()
+
+        self.animar_pieza(destino, origen, simbolo, terminar_animacion)
+
+    def _bloquear_controles_revision_general(self, bloqueados: bool) -> None:
+        """Bloquea controles mientras una pieza está en movimiento."""
+        self._animacion_solucion_general_activa = bloqueados
+        self._btn_siguiente_general.disabled = bloqueados
+        self.ids.btn_volver.disabled = bloqueados
+
+        if bloqueados:
+            self._btn_solucion_anterior_general.disabled = True
+            self._btn_solucion_siguiente_general.disabled = True
+
+    def _renderizar_tablero_revision_general(self) -> None:
+        """Pinta el tablero aislado sin modificar ChessManager."""
+        if self._tablero_revision_general is None:
+            return
+
+        for nombre_casilla, widget in self.diccionario_casillas.items():
+            indice_casilla = chess.parse_square(nombre_casilla)
+            pieza = self._tablero_revision_general.piece_at(indice_casilla)
+            widget.ruta_pieza = (
+                self.mapa_imagenes.get(pieza.symbol(), "") if pieza else ""
+            )
+
+    def _actualizar_navegacion_solucion_general(self) -> None:
+        """Actualiza contador y límites de navegación."""
+        total = len(self._movimientos_revision_general)
+        if self._indice_revision_general == 0:
+            self._lbl_paso_solucion_general.text = "INICIO"
+        else:
+            self._lbl_paso_solucion_general.text = (
+                f"{self._indice_revision_general} / {total}"
+            )
+
+        if not self._animacion_solucion_general_activa:
+            self._btn_solucion_anterior_general.disabled = (
+                self._indice_revision_general == 0
+            )
+            self._btn_solucion_siguiente_general.disabled = (
+                self._indice_revision_general >= total
+            )
 
     def inicializar_tablero(self):
         """
@@ -268,6 +612,7 @@ class VistaTablero(BoxLayout):
                 visor.mostrar_pagina()
             app.sm.current = 'escuela_visor'
             return
+        self._restablecer_panel_solucion_general()
         self.limpiar_flecha()
         elo_jugador = self.perfil_actual.get("elo", 600)
         historial_resueltos = set(self.perfil_actual.get("resueltos", []))
@@ -351,6 +696,9 @@ class VistaTablero(BoxLayout):
         Returns:
             None
         """
+        if self._modo_solucion_general:
+            return
+
         gestor = self.gestor_ajedrez
 
         # Verificamos si ya hay origen seleccionado y el destino es legal[cite: 3]
@@ -435,6 +783,7 @@ class VistaTablero(BoxLayout):
                 self.ids.btn_siguiente.text = "Siguiente Puzzle"
                 self.ids.btn_volver.opacity = 1
                 self.ids.btn_volver.disabled = False
+                self._mostrar_acciones_fallo_general()
         else:
             # Seleccionar nueva pieza si no estábamos intentando mover[cite: 3]
             gestor.seleccionar_casilla(nombre_casilla)
@@ -722,6 +1071,7 @@ class VistaTablero(BoxLayout):
         puzzle_test = self.gestor_puzzles.obtener_puzzle_por_id(id_puzzle)
 
         if puzzle_test:
+            self._restablecer_panel_solucion_general()
             # Reseteamos el motor lógico de ajedrez con el nuevo FEN
             self.gestor_ajedrez.cargar_puzzle(puzzle_test)
 

@@ -1,0 +1,22 @@
+## 1. Comprender el ataque doble
+   Un ataque doble aparece cuando una misma jugada crea dos amenazas al mismo tiempo. Esta idea es importante porque el adversario normalmente solo puede responder a una de ellas.
+   Para reconocer el patrón, conviene observar primero las piezas enemigas más valiosas y preguntarse: **¿existe una casilla desde la que una de mis piezas pueda atacar dos objetivos simultáneamente?**
+   El caballo es especialmente eficaz porque sus ataques no pueden bloquearse.
+
+[PAGINA]
+
+## 2. La horquilla con jaque
+   Cuando uno de los objetivos atacados es el rey, el ataque doble adquiere una fuerza especial. El adversario está obligado a responder al jaque y puede quedar sin tiempo para salvar la segunda pieza.
+   [FEN: 2q1k3/8/8/5N2/8/8/8/4K3 w - - 0 1 | A: f5d6-g | C: c8-r, e8-r]
+   El rey negro está situado en **e8**, la dama negra en **c8** y el caballo blanco en **f5**. La jugada **Nd6+** coloca el caballo en d6. Desde allí controla **e8**, donde se encuentra el rey, y **c8**, donde está la dama.
+   El jaque obliga a las negras a resolver primero la amenaza contra su rey. Después, el caballo puede capturar
+
+[PAGINA]
+
+la dama en c8.
+
+[PAGINA]
+
+## 3. Cómo detectar una horquilla
+   Antes de jugarla, identifica una casilla desde la que puedas atacar dos piezas importantes. Después comprueba si puedes llegar a ella con seguridad. Finalmente, calcula todas las respuestas al jaque.
+   La clave no consiste únicamente en ver dos objetivos, sino en comprobar que la segunda captura seguirá siendo posible después de la respuesta obligatoria del adversario.
