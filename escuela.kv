@@ -174,23 +174,24 @@
     font_size: '14sp'
     font_name: 'Michroma'
     color: 0.9, 0.9, 0.9, 1
-    # Obligamos al texto a encajarse en la tarjeta
-    text_size: self.size
+    size_hint_y: None
+    height: self.texture_size[1]
+    text_size: self.width, None
     halign: 'left'
     valign: 'top'
     markup: True
 
 <ContenedorTableroMini@AnchorLayout>:
     size_hint_y: None
-    # Mantenemos proporciones cuadradas basándonos en el ancho
-    height: self.width * 0.8
+    # Diagrama compacto para dejar más espacio al contenido teórico.
+    height: self.width * 0.70
     GridLayout:
         id: grid
         cols: 8
         rows: 8
         size_hint: None, None
-        width: root.width * 0.8
-        height: root.width * 0.8
+        width: root.width * 0.70
+        height: root.width * 0.70
         canvas.before:
             Color:
                 rgba: 0.8, 0.6, 0.1, 1
@@ -219,11 +220,11 @@
             size_hint_y: 0.1
             color: 0.05, 0.15, 0.25, 1
 
-        BoxLayout:
-            orientation: 'vertical'
+        AnchorLayout:
             size_hint_y: 0.8
+            anchor_x: 'center'
+            anchor_y: 'top'
             padding: dp(20)
-            spacing: dp(15)
             canvas.before:
                 Color:
                     rgba: 0.05, 0.15, 0.25, 0.8
@@ -240,7 +241,9 @@
             BoxLayout:
                 id: contenedor_contenido
                 orientation: 'vertical'
-                spacing: dp(15)
+                size_hint_y: None
+                height: self.minimum_height
+                spacing: dp(10)
 
         BoxLayout:
             size_hint_y: None

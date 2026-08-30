@@ -19,7 +19,8 @@
     "victorias_100": 0,
     "progreso_escuela": {
         "tac_01": true,
-        "tac_02": true
+        "tac_02": true,
+        "tac_03": true
     },
     "practica_lecciones": {
         "tac_02": {

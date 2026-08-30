@@ -2,7 +2,8 @@
     "temario": {
         "tactica": [
             ["tac_01", "Introduccion a la tactica"],
-            ["tac_02", "El ataque doble"]
+            ["tac_02", "El ataque doble"],
+            ["tac_03", "Pieza indefensa o colgada"]
         ],
         "mates": [
             ["mat_01", "Mate del pasillo"],
@@ -21,6 +22,11 @@
         },
         "tac_02": {
             "teoria": "tactica_doble_teoria.txt",
+            "ejemplos": null,
+            "practica": "doble_db_puzzle.csv"
+        },
+        "tac_03": {
+            "teoria": "tactica_indefensa_teoria.txt",
             "ejemplos": null,
             "practica": "doble_db_puzzle.csv"
         }

@@ -1,0 +1,41 @@
+## 1. Qué significa que una pieza esté colgada
+Una pieza está colgada cuando puede ser capturada y el rival no obtiene una compensación suficiente mediante una recaptura o una táctica posterior. Por eso no basta con observar si una pieza está atacada: hay que comprobar también quién la defiende y qué sucede después del intercambio.
+El procedimiento práctico es: observar ataques -> contar defensores -> identificar candidatos de captura -> calcular la respuesta rival -> evaluar la posición resultante. Una pieza aparentemente activa puede convertirse en una debilidad si entra en una casilla donde queda sin protección.
+
+[PAGINA]
+
+## 2. Un caballo sin defensor
+[FEN: r2q2k1/4p2p/2n5/1B6/8/5N2/4P3/6K1 w - - 0 1 | A: b5c6-g]
+El alfil blanco está en b5 y el caballo negro en c6. La flecha verde b5-c6 muestra el ataque directo del alfil sobre el caballo. Ninguna pieza negra protege c6: la dama de d8, la torre de a8, el rey de g8 y los peones de e7 y h7 no pueden recapturar en esa casilla.
+Lo primero que debe observar el lector es la relación atacante-defensor. Las blancas pueden
+
+[PAGINA]
+
+considerar Bxc6 porque, después de la captura, las negras no disponen de una recaptura inmediata. El caballo está realmente colgado.
+
+[PAGINA]
+
+## 3. Contar atacantes y defensores
+[FEN: r5k1/7p/3b4/q4N2/8/8/7P/3QR1K1 w - - 0 1 | A: f5d6-g, d1d6-g]
+El alfil negro ocupa d6. El caballo blanco de f5 lo ataca, como indica la flecha f5-d6. Además, la dama blanca de d1 ejerce presión vertical sobre d6; la flecha d1-d6 representa esa segunda relación.
+El punto esencial no es que existan dos atacantes, sino que el alfil carece de defensor. Antes de capturar, las blancas deben comprobar si las negras disponen de una amenaza más fuerte o de
+
+[PAGINA]
+
+una respuesta táctica. Si no existe, el alfil constituye material disponible.
+
+[PAGINA]
+
+## 4. Una pieza puede quedar colgada incluso dando jaque
+[FEN: r1b3k1/7p/5n2/8/6Q1/2N5/7P/R5K1 b - - 0 1 | A: c8g4-g, f6g4-g]
+La dama blanca está en g4 y da jaque al rey negro de g8 por la columna g. Sin embargo, está atacada por el alfil de c8 y por el caballo de f6. Las flechas c8-g4 y f6-g4 muestran ambas capturas posibles.
+Las negras deben responder al jaque, pero pueden hacerlo precisamente capturando la pieza atacante. Tanto Bxg4 como Nxg4 eliminan la dama y resuelven
+
+[PAGINA]
+
+el jaque. El patrón enseña una regla importante: una jugada forzante no es necesariamente correcta si la pieza que la realiza queda colgada.
+
+[PAGINA]
+
+## 5. Hábito práctico
+Antes de cada jugada, pregunta: ¿qué piezas mías están atacadas?, ¿cuáles no están defendidas?, ¿qué piezas rivales están colgadas? Esta revisión breve evita pérdidas materiales y también permite detectar errores inmediatos del adversario.

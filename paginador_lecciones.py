@@ -46,7 +46,7 @@ def auto_paginar_leccion(ruta_entrada: str, ruta_salida: str, limite_palabras: i
 
     bloques_maestros = texto_crudo.split('[PAGINA]')
     paginas_procesadas = []
-    PESO_TABLERO = 50
+    PESO_TABLERO = 75
 
     for bloque in bloques_maestros:
         patron = re.compile(r'(\s+|\[FEN:.*?\]|\[PUZZLE\].*?\[FIN\])', re.DOTALL)
@@ -94,8 +94,8 @@ def auto_paginar_leccion(ruta_entrada: str, ruta_salida: str, limite_palabras: i
 
 if __name__ == "__main__":
     # Ejecución aislada. Modifica las rutas según el sistema de archivos.
-    ruta_origen = os.path.join("lecciones", "tactica_doble_teoria.txt")
-    ruta_destino = os.path.join("lecciones", "tactica_doble_teoria.txt")
+    ruta_origen = os.path.join("lecciones", "tactica_indefensa_teoria.txt")
+    ruta_destino = os.path.join("lecciones", "tactica_indefensa_teoria.txt")
 
     # Creamos un archivo dummy de prueba si no existe la estructura
     if not os.path.exists(ruta_origen):
