@@ -4,5 +4,10 @@
     "resueltos": [],
     "partidas_jugadas": 1,
     "escala_pop": 0,
-    "victorias_100": 0
+    "victorias_100": 0,
+    "progreso_escuela": {
+        "tac_02": true,
+        "tac_03": true,
+        "tac_01": true
+    }
 }

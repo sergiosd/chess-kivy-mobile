@@ -1,108 +1,60 @@
 ## 1. Qué es realmente un ataque doble
 El ataque doble es uno de los recursos tácticos más importantes del ajedrez. Se produce cuando una sola jugada crea dos amenazas al mismo tiempo. Su fuerza no depende únicamente de atacar dos piezas, sino de obligar al adversario a resolver dos problemas disponiendo normalmente de una sola jugada.
 Esta diferencia entre el número de amenazas y el número de respuestas disponibles es la base del motivo táctico. Si una pieza ataca simultáneamente una dama y una torre, el rival puede intentar salvar una de ellas, pero con frecuencia la segunda continuará expuesta.
-Para reconocer este patrón es necesario cambiar la forma de observar el tablero. En lugar de mirar cada pieza por separado, hay que estudiar las relaciones entre ellas. Debemos identificar piezas enemigas valiosas, piezas
-
-[PAGINA]
-
-sin suficiente protección y posibles puntos desde los cuales una pieza propia podría amenazar dos objetivos simultáneamente.
+Para reconocer este patrón es necesario cambiar la forma de observar el tablero. En lugar de mirar cada pieza por separado, hay que estudiar las relaciones entre ellas. Debemos identificar piezas enemigas valiosas, piezas sin suficiente protección y posibles puntos desde los cuales una pieza propia podría amenazar dos objetivos simultáneamente.
 Todas las piezas pueden producir ataques dobles. El caballo es especialmente conocido por este recurso debido a la forma particular de su movimiento, pero los alfiles, las torres, la dama, los peones e incluso el rey pueden crear amenazas dobles.
 La idea fundamental es sencilla: una sola pieza obliga al adversario a preocuparse por dos objetivos diferentes.
-
-[PAGINA]
 
 ## 2. Ataque doble de alfil contra dama y torre
 [FEN: 4k3/5q2/8/8/2B5/3K4/r7/8 b - - 0 1 | A: f7f3-r, c4a2-g, c4f7-g]
 En esta posición, el alfil blanco se encuentra en una zona central del tablero. La dama negra está situada en una diagonal ascendente del alfil, mientras que la torre negra aparece en la diagonal opuesta, cerca del borde.
-El alfil ejerce presión simultáneamente en dos direcciones. En una de sus
-
-[PAGINA]
-
-diagonales alcanza directamente a la dama. En la diagonal contraria alcanza a la torre. Ninguna pieza intermedia bloquea estas líneas.
+El alfil ejerce presión simultáneamente en dos direcciones. En una de sus diagonales alcanza directamente a la dama. En la diagonal contraria alcanza a la torre. Ninguna pieza intermedia bloquea estas líneas.
 Éste es un ataque doble porque una sola pieza blanca está atacando al mismo tiempo dos piezas negras diferentes.
 La distancia entre los objetivos no es importante. La dama y la torre están muy separadas físicamente, pero ambas se encuentran sobre líneas controladas por el mismo alfil. Esto muestra un principio esencial: en los ataques dobles de piezas de largo alcance, la geometría es más importante que la proximidad.
-Las negras tienen ahora un problema práctico. Si retiran la dama, la torre permanece amenazada. Si retiran la torre, la dama continúa bajo ataque. Salvar ambas piezas requeriría encontrar una jugada que, además de mover una de ellas, protegiera o retirara simultáneamente la otra amenaza. En
-
-[PAGINA]
-
-muchas posiciones eso no es posible. En este caso la solución para las negras es mover la reina a la casilla f3 y realizar un jaque, el movimiento forzado del rey blanco permite a continuación mover y salvar la torre.
+Las negras tienen ahora un problema práctico. Si retiran la dama, la torre permanece amenazada. Si retiran la torre, la dama continúa bajo ataque. Salvar ambas piezas requeriría encontrar una jugada que, además de mover una de ellas, protegiera o retirara simultáneamente la otra amenaza. En muchas posiciones eso no es posible. En este caso la solución para las negras es mover la reina a la casilla f3 y realizar un jaque, el movimiento forzado del rey blanco permite a continuación mover y salvar la torre.
 Al buscar ataques dobles con un alfil, conviene recorrer mentalmente todas sus diagonales. No debemos observar solamente las piezas cercanas. Una pieza situada muy lejos puede convertirse en el segundo objetivo si existe una línea completamente abierta.
 Este tipo de patrón aparece con frecuencia después de intercambios de peones o movimientos que despejan diagonales anteriormente cerradas. Una diagonal aparentemente inofensiva puede transformarse inmediatamente en una vía de ataque.
-
-[PAGINA]
 
 ## 3. La horquilla: cuando uno de los objetivos es el rey
 La horquilla es una forma de ataque doble. En sentido general, consiste en una pieza que ataca simultáneamente dos o más objetivos. Sin embargo, una de sus versiones más fuertes aparece cuando uno de esos objetivos es el rey.
 La diferencia es fundamental. Cuando una dama y una torre reciben un ataque simultáneo, el jugador puede decidir cuál desea salvar. Cuando el rey recibe jaque, esa libertad desaparece. La amenaza contra el rey debe resolverse inmediatamente.
 Esta obligación convierte al jaque en una herramienta para ganar tiempo.
 Mientras el adversario dedica su jugada a proteger al rey, la segunda pieza atacada puede quedar expuesta. De esta manera, la horquilla combina dos elementos tácticos: el ataque simultáneo y una respuesta forzada.
-Por eso, cuando
-
-[PAGINA]
-
-buscamos ataques dobles, el rey debe recibir una atención especial. Una pieza enemiga valiosa situada
+Por eso, cuando buscamos ataques dobles, el rey debe recibir una atención especial. Una pieza enemiga valiosa situada
 a una distancia de salto de un posible jaque puede ser una señal de alarma.
-
-[PAGINA]
 
 ## 4. Horquilla de caballo contra rey y dama
 [FEN: 4k3/p5pp/3N4/1p6/2q5/r2b1Q1P/5PP1/5RK1 b - - 0 1 | A: d6c4-g, d6e8-g]
 Aquí el caballo blanco ocupa una posición avanzada. El rey negro y la dama negra se encuentran enla última y cuarta fila del tablero.
 Desde su posición, el caballo ataca simultáneamente al rey y a la dama. Por tanto, las negras están sufriendo una horquilla.
-El elemento decisivo es que el
-
-[PAGINA]
-
-rey está en jaque. Las negras no pueden simplemente retirar la dama. Deben resolver primero la amenaza contra el rey.
+El elemento decisivo es que el rey está en jaque. Las negras no pueden simplemente retirar la dama. Deben resolver primero la amenaza contra el rey.
 El jugador debe analizar entonces todas las respuestas legales disponibles. El rey puede intentar desplazarse a una posición segura. También debe comprobarse si el caballo puede ser capturado por alguna pieza negra. Debido a que el ataque procede de un caballo, no es posible detener el jaque colocando una pieza entre el caballo y el rey.
 Si el rey logra escapar pero el caballo permanece sobre el tablero, la dama seguirá amenazada. En la siguiente jugada, las blancas podrán capturarla si no existe algún recurso táctico adicional. En este caso no hay más remedio que mover el rey negro a una casilla más segura permitiendo la captura de la dama negra.
-Ésta es la verdadera
-
-[PAGINA]
-
-fuerza de la horquilla con jaque. El caballo no gana la dama solamente porque la ataque. La gana porque el adversario está obligado a utilizar su turno para atender primero al rey.
+Ésta es la verdadera fuerza de la horquilla con jaque. El caballo no gana la dama solamente porque la ataque. La gana porque el adversario está obligado a utilizar su turno para atender primero al rey.
 Cuando busques este patrón durante una partida, presta atención a caballos que puedan saltar cerca del rey enemigo. Después observa si desde ese mismo punto también podrían atacar una dama, una torre u otra pieza importante.
 El cálculo debe realizarse antes de ejecutar la jugada. No basta con reconocer visualmente la horquilla. Es necesario comprobar si el caballo puede ser capturado, si el rey tiene una respuesta que proteja simultáneamente la segunda pieza o si existe un contraataque más fuerte.
-
-[PAGINA]
 
 ## 5. El orden correcto para calcular un ataque doble
 Encontrar dos objetivos no significa automáticamente que exista una combinación ganadora.
 Primero debemos identificar las piezas enemigas vulnerables. Una dama sin protección, una torre alejada de sus defensores o una pieza menor situada cerca del rey pueden convertirse en objetivos tácticos.
 Después buscamos una pieza propia capaz de atacar dos de esos objetivos mediante una sola jugada.
 El siguiente paso consiste en analizar la respuesta más fuerte del adversario. Éste es uno de los hábitos más importantes del cálculo táctico. No debemos preguntarnos únicamente qué queremos hacer, sino qué hará el rival para defenderse.
-Si existe jaque, debemos estudiar todas las respuestas legales al jaque. Si no existe jaque, debemos comprobar si el adversario puede retirar una pieza mientras protege la otra, intercambiar la pieza
-
-[PAGINA]
-
-atacante o crear una amenaza todavía más fuerte.
+Si existe jaque, debemos estudiar todas las respuestas legales al jaque. Si no existe jaque, debemos comprobar si el adversario puede retirar una pieza mientras protege la otra, intercambiar la pieza atacante o crear una amenaza todavía más fuerte.
 También debemos valorar qué ocurre después de ganar material. Una combinación puede parecer favorable porque permite capturar una torre, pero si la pieza atacante queda atrapada y se pierde inmediatamente, el resultado puede ser diferente.
 Por tanto, un ataque doble debe analizarse como una pequeña secuencia de jugadas y no simplemente como una imagen atractiva.
-
-[PAGINA]
 
 ## 6. Ataque doble realizado por un peón protegido
 [FEN: 4k3/8/3b1n2/4P3/3P4/3K4/8/8 b - - 0 1 | A: e5d6-g, e5f6-g]
 En esta posición, un peón blanco avanzado ataca simultáneamente un alfil negro y un caballo negro.
-El movimiento de captura de un peón es diferente de su movimiento normal. El peón avanza en línea recta, pero captura en diagonal. Debido a esta característica, un solo peón puede atacar dos piezas colocadas
-
-[PAGINA]
-
-a ambos lados de su dirección de avance.
+El movimiento de captura de un peón es diferente de su movimiento normal. El peón avanza en línea recta, pero captura en diagonal. Debido a esta característica, un solo peón puede atacar dos piezas colocadas a ambos lados de su dirección de avance.
 Aquí encontramos exactamente ese patrón. El alfil está situado en una de las diagonales de captura del peón y el caballo en la otra. Por tanto, ambos están amenazados al mismo tiempo.
 
 La posición incluye además un detalle fundamental: el peón atacante está protegido por otro peón blanco situado detrás y a un lado.
 Esta protección dificulta que las negras eliminen simplemente al peón atacante. Si una de las piezas amenazadas captura ese peón, el segundo peón blanco puede responder capturando a la pieza que acaba de hacerlo.
 Esto introduce el concepto de intercambio desfavorable. Un peón tiene un valor material mucho menor que un alfil o un caballo. Por eso, entregar voluntariamente una pieza menor para eliminar un peón normalmente sería una decisión muy costosa.
-La
-
-[PAGINA]
-
-presencia del defensor convierte al peón atacante en una pieza tácticamente estable.
+La presencia del defensor convierte al peón atacante en una pieza tácticamente estable.
 Los ataques dobles de peón son especialmente fáciles de pasar por alto porque los jugadores suelen concentrar su atención en las piezas de mayor valor. Sin embargo, un peón avanzado puede crear amenazas extremadamente incómodas.
 Para reconocer este patrón hay que observar siempre las dos diagonales de captura de los peones. Si aparecen dos piezas enemigas en esas direcciones, existe un ataque doble. Después debemos comprobar si el peón está defendido y si alguna de las piezas amenazadas dispone de una respuesta que salve ambas.
-
-[PAGINA]
 
 ## 7. Objetivos, geometría y tiempo
 Los tres ejemplos anteriores utilizan piezas diferentes, pero comparten la misma estructura táctica.
@@ -110,14 +62,8 @@ En el primer ejemplo, el alfil utiliza dos líneas diagonales para atacar una da
 En el segundo, el caballo ataca simultáneamente al rey y a la dama. La clave es la prioridad absoluta del jaque.
 En el tercero, un peón protegido amenaza dos piezas menores. La clave es la relación entre el bajo valor del atacante, sus dos direcciones de captura y la protección proporcionada por otro peón.
 Estas diferencias muestran que el ataque doble no debe memorizarse como una posición concreta. Debe comprenderse como un principio general.
-Una pieza crea dos amenazas. El adversario dispone de una respuesta. Si esa única respuesta no puede
-
-[PAGINA]
-
-resolver ambos problemas, una de las amenazas probablemente se hará efectiva.
+Una pieza crea dos amenazas. El adversario dispone de una respuesta. Si esa única respuesta no puede resolver ambos problemas, una de las amenazas probablemente se hará efectiva.
 El tiempo es, por tanto, el elemento invisible que conecta todas estas posiciones.
-
-[PAGINA]
 
 ## 8. Cómo entrenar la detección del ataque doble
 Durante una partida, empieza observando las piezas enemigas que podrían convertirse en objetivos tácticos. Presta especial atención al rey, la dama, las torres y las piezas que tengan poca protección.
@@ -125,10 +71,6 @@ Después analiza tus propias piezas buscando movimientos que creen más de una a
 Con los alfiles, las torres y la dama debes pensar en líneas. Comprueba si una misma pieza puede ejercer presión en direcciones diferentes.
 Con los caballos debes pensar en saltos. Una buena posición avanzada puede permitirles atacar varias piezas simultáneamente, y cuando uno de esos ataques es jaque la amenaza adquiere una fuerza especial.
 Con los peones debes observar sus dos diagonales de captura. Un avance aparentemente sencillo puede crear de repente un ataque contra dos piezas.
-Finalmente, hazte una pregunta concreta: **¿puede
-
-[PAGINA]
-
-mi adversario resolver las dos amenazas con una sola jugada?**
+Finalmente, hazte una pregunta concreta: **¿puede mi adversario resolver las dos amenazas con una sola jugada?**
 Si la respuesta es negativa, probablemente has encontrado un ataque doble efectivo.
 Dominar este recurso requiere algo más que resolver ejercicios tácticos. Es necesario desarrollar el hábito de observar relaciones entre piezas, comparar amenazas y calcular respuestas forzadas. Cuando ese proceso se vuelve natural, los ataques dobles dejan de parecer combinaciones inesperadas y comienzan a surgir como consecuencias lógicas de la estructura de la posición.
