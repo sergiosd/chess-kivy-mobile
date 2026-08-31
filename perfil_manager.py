@@ -1,9 +1,7 @@
-import json
-import os
-
 import os
 import json
 from kivy.uix.screenmanager import Screen
+from kivy.utils import platform
 
 class PerfilManager:
     """
@@ -16,15 +14,22 @@ class PerfilManager:
     def __init__(self, directorio_perfiles="perfiles"):
         """
         Inicializa el gestor y asegura la existencia de la estructura de carpetas.
-
-        Args:
-            directorio_perfiles (str): Ruta al directorio donde vivirán los JSON.
         """
-        self.directorio = directorio_perfiles
-        if not os.path.exists(self.directorio):
-            os.makedirs(self.directorio)
 
-        self.archivo_global = os.path.join(self.directorio, "_estado_global.json")
+        if platform == "android":
+            from android.storage import app_storage_path
+            directorio_perfiles = os.path.join(
+                app_storage_path(),
+                "perfiles"
+            )
+
+        self.directorio = directorio_perfiles
+        os.makedirs(self.directorio, exist_ok=True)
+
+        self.archivo_global = os.path.join(
+            self.directorio,
+            "_estado_global.json"
+        )
 
     def obtener_ultimo_usuario(self) -> str | None:
         """

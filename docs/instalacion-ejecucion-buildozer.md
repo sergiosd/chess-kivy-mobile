@@ -226,7 +226,9 @@ package.name = kivychess
 
 package.domain = org.sergiosd
 
-source.include_exts = py,png,jpg,kv,atlas,wav,json,csv, ttf
+source.include_exts = py,png,jpg,kv,atlas,wav,json,csv,ttf,txt
+
+source.exclude_dirs = tests, bin, venv, entorno_android
 
 source.include_patterns = assets/*, assets/fonts/*, assets/pieces/*, assets/squares/*, assets/ui/*, assets/sounds/*
 

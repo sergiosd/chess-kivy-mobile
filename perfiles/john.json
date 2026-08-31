@@ -77,7 +77,9 @@
                 "BE6yO",
                 "Ad1Cy",
                 "BL0tg",
-                "AAUSQ"
+                "AAUSQ",
+                "AtxWp",
+                "A26gR"
             ],
             "fallados": [
                 "fZjIE",
@@ -96,9 +98,35 @@
                 "Aok84",
                 "AAD5Z",
                 "B6xUm",
-                "BHuGq"
+                "BHuGq",
+                "A9xrf",
+                "B2nRG"
             ],
-            "rating": 18.896692652973883
+            "rating": 19.34764457002626
+        },
+        "tac_03": {
+            "rating": 33.47048439974401,
+            "resueltos": [
+                "Njd9Y",
+                "QcXda",
+                "NNhF8",
+                "QMdFo",
+                "Nuo6I",
+                "Nz9zN",
+                "O2zRo",
+                "Q9y7Z",
+                "O50jg",
+                "PNkli",
+                "QejWx",
+                "OMo17"
+            ],
+            "fallados": [
+                "ONFYQ",
+                "MTTZ8",
+                "Qx3Bm",
+                "MTQR4",
+                "R2It6"
+            ]
         }
     }
 }

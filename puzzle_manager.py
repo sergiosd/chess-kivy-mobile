@@ -1,6 +1,5 @@
 import csv
 import random
-import json
 import os
 
 from utilidades import CalculadorRatingTactico
@@ -63,53 +62,12 @@ class PuzzleManager:
     la repetición de tácticas mediante un registro global[cite: 10].
     """
 
-    def __init__(self, ruta_csv="lichess_db_puzzle.csv",
-                 ruta_memoria="memoria_puzzles_global.json"):
-        """
-        Inicializa el gestor y prepara la caché RAM.
-
-        Args:
-            ruta_csv (str): Ruta a la asquerosa base de datos CSV[cite: 10].
-            ruta_memoria (str): Ruta al inestable archivo JSON de memoria global[cite: 10].
-        """
+    def __init__(self, ruta_csv="lichess_db_puzzle.csv"):
         self.ruta_csv = ruta_csv
-        self.ruta_memoria = ruta_memoria
-
-        # Diccionario para almacenar tácticas en memoria RAM clasificadas[cite: 10]
         self.cache_puzzles = {}
-        # Carga del disco los IDs de los puzles que ya han salido alguna vez[cite: 10]
-        self.puzzles_vistos_global = self.cargar_memoria_global()
+
         print("Iniciando Gestor de Puzzles Premium con Búsqueda Concéntrica...")
 
-    def cargar_memoria_global(self):
-        """
-        Recupera el set de IDs jugados desde el JSON local.
-
-        Returns:
-            set: Conjunto de IDs ya jugados globalmente[cite: 10].
-        """
-        if os.path.exists(self.ruta_memoria):
-            with open(self.ruta_memoria, "r", encoding="utf-8") as f:
-                try:
-                    return set(json.load(f))
-                except json.JSONDecodeError:
-                    return set()
-        return set()
-
-    def guardar_memoria_global(self):
-        """Persiste el set actual de IDs jugados volcándolo a JSON[cite: 10]."""
-        with open(self.ruta_memoria, "w", encoding="utf-8") as f:
-            json.dump(list(self.puzzles_vistos_global), f)
-
-    def registrar_puzzle_global(self, id_puzzle):
-        """
-        Añade un ID completado al registro y actualiza el archivo en disco.
-
-        Args:
-            id_puzzle (str): El identificador único del puzle resuelto[cite: 10].
-        """
-        self.puzzles_vistos_global.add(id_puzzle)
-        self.guardar_memoria_global()
 
     def cargar_puzzles_por_elo(self, elo_objetivo, ids_locales, cantidad=20, pop_min=100,
                                pop_max=100, temas_prohibidos=None):
@@ -232,8 +190,6 @@ class PuzzleManager:
         import random
         puzzle_elegido = random.choice(self.cache_puzzles[clave_rango])
         self.cache_puzzles[clave_rango].remove(puzzle_elegido)
-
-        self.registrar_puzzle_global(puzzle_elegido["id"])
 
         return puzzle_elegido
 

@@ -28,7 +28,7 @@
         "tac_03": {
             "teoria": "tactica_indefensa_teoria.txt",
             "ejemplos": null,
-            "practica": "doble_db_puzzle.csv"
+            "practica": "colgadas_db_puzzle.csv"
         }
     }
 }
