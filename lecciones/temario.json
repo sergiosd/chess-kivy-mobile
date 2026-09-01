@@ -3,7 +3,8 @@
         "tactica": [
             ["tac_01", "Introduccion a la tactica"],
             ["tac_02", "Pieza indefensa o colgada"],
-            ["tac_03", "El ataque doble"]
+            ["tac_03", "El ataque doble"],
+            ["tac_04", "La clavada"]
         ],
         "mates": [
             ["mat_01", "Mate del pasillo"],
@@ -29,6 +30,11 @@
             "teoria": "tactica_indefensa_teoria.txt",
             "ejemplos": null,
             "practica": "colgadas_db_puzzle.csv"
+        },
+        "tac_04": {
+            "teoria": "tactica_clavada_teoria.txt",
+            "ejemplos": null,
+            "practica": "clavadas_db_puzzle.csv"
         }
     }
 }

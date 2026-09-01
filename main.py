@@ -330,12 +330,14 @@ class VistaTablero(BoxLayout):
             height=dp(60),
             spacing=0,
         )
-        self._btn_mostrar_solucion_general = Button(
+        self._btn_mostrar_solucion_general = BotonTextoAdaptativo(
             text="MOSTRAR SOLUCION",
             size_hint_x=None,
             width=0,
             opacity=0,
             disabled=True,
+            font_size_max=sp(16),
+            margen_horizontal=dp(6),
             background_color=(1, 1, 1, 1),
             background_normal="assets/ui/button.png",
             background_down="assets/ui/button_down.png",

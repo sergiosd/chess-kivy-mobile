@@ -1,0 +1,82 @@
+## 1. Qué es una clavada
+
+La clavada es un motivo táctico en el que una pieza no puede moverse, o no conviene que se mueva, porque detrás de ella existe un objetivo más importante. Para detectarla hay que observar piezas alineadas, no piezas aisladas. La geometría básica contiene tres elementos: pieza atacante, pieza clavada y pieza situada detrás.
+Si detrás está el rey, hablamos de clavada absoluta: mover la pieza sería ilegal porque dejaría al rey en jaque. Si detrás está una dama, torre u otro objetivo valioso, la clavada es relativa: la pieza puede moverse legalmente, pero hacerlo puede producir una pérdida material.
+El procedimiento correcto es observación -> evaluación -> candidatos -> cálculo. Primero se reconoce la alineación; después se determina si la pieza clavada realmente está limitada y, finalmente, se calcula
+
+[PAGINA]
+
+cómo explotarla.
+
+[PAGINA]
+
+## 2. Clavada absoluta con alfil
+
+[FEN: 2bq1rk1/5npp/5p2/8/2B5/8/5PPP/3Q1RK1 w - - 0 1 | A: c4f7-g]
+El alfil blanco está en c4 y el caballo negro en f7. Detrás del caballo, sobre la misma diagonal c4-d5-e6-f7-g8, se encuentra el rey negro en g8. La flecha c4f7 muestra el ataque real del alfil contra el caballo.
+La pieza clave es el caballo: aunque normalmente podría saltar a otra casilla, aquí no
+
+[PAGINA]
+
+puede hacerlo legalmente porque dejaría abierta la diagonal hacia g8. Debemos observar primero la alineación alfil-caballo-rey.
+La clavada no gana material automáticamente. Las blancas todavía deben calcular si pueden aumentar la presión sobre f7, capturar allí o crear otra amenaza aprovechando que el caballo ha perdido movilidad.
+
+[PAGINA]
+
+## 3. Clavada relativa contra la dama
+
+[FEN: r5k1/4qppp/4b3/8/2B5/8/5PPP/3QR1K1 w - - 0 1 | A: e1e6-g]
+La torre blanca de e1 ataca al alfil negro de e6 por una columna completamente abierta. Detrás del alfil está la dama negra en e7. La flecha e1e6 representa esa presión directa.
+Aquí el alfil sí puede moverse: el rey negro está en g8 y no quedaría en jaque. Sin embargo, abandonar la
+
+[PAGINA]
+
+columna e permitiría que la torre atacara inmediatamente la dama. Por eso hablamos de clavada relativa.
+El lector debe calcular una excepción importante: quizá el alfil pueda desplazarse creando jaque, atacando la dama blanca o generando una amenaza superior. Una clavada relativa restringe una pieza, pero no la inmoviliza absolutamente.
+
+[PAGINA]
+
+## 4. Una pieza clavada al rey
+
+[FEN: r1bqk3/4nppp/8/8/5B2/2N5/5PPP/3QR1K1 w - - 0 1 | A: e1e7-g]
+La torre blanca ocupa e1 y el caballo negro está en e7, inmediatamente delante del rey de e8. Entre la torre y el caballo no existen piezas. La flecha e1e7 señala el ataque de la torre.
+El caballo está absolutamente clavado. Si saltara, la torre atacaría directamente al rey por la columna e.
+
+[PAGINA]
+
+Esto modifica la evaluación de la pieza: un caballo central suele defender muchas casillas, pero un caballo absolutamente clavado puede tener una capacidad defensiva práctica mucho menor.
+Las blancas deben buscar candidatos que aumenten el número de atacantes sobre e7. El objetivo no es simplemente reconocer la clavada, sino convertir la inmovilidad del caballo en una ventaja concreta.
+
+[PAGINA]
+
+## 5. Atacar una pieza clavada
+
+[FEN: 2bq1rk1/5ppp/4pn2/4P1B1/8/4N3/5PPP/3Q1RK1 w - - 0 1 | A: g5f6-g, e5f6-g]
+El alfil blanco de g5 ataca el caballo negro de f6; la primera flecha representa esta relación. Detrás del caballo, siguiendo g5-f6-e7-d8, está la dama negra en d8. La segunda flecha, e5f6, muestra que el peón blanco de e5 también ataca al caballo.
+Éste es un patrón práctico muy importante: primero se clava una
+
+[PAGINA]
+
+pieza y después se la ataca con otra unidad. El caballo puede moverse legalmente, pero dejaría expuesta la dama.
+Antes de capturar en f6, las blancas deben calcular las recapturas y comparar el material resultante. La existencia de una clavada mejora las posibilidades tácticas, pero el intercambio final sigue necesitando evaluación.
+
+[PAGINA]
+
+## 6. Dos atacantes contra una pieza inmovilizada
+
+[FEN: r2qkb2/5ppp/2n1p3/1B6/1N6/8/5PPP/3Q1RK1 w - - 0 1 | A: b5c6-g, b4c6-g]
+El alfil blanco de b5 ataca el caballo negro de c6. Detrás están d7, que está vacía, y el rey negro en e8. La flecha b5c6 muestra la clavada absoluta. El caballo blanco de b4 también ataca c6, como indica la segunda flecha.
+Ahora el caballo negro está sometido a dos presiones
+
+[PAGINA]
+
+y no puede escapar mediante un salto normal, porque descubriría el ataque del alfil contra el rey. El patrón estratégico es aumentar atacantes sobre una pieza cuya movilidad está restringida.
+El cálculo debe comprobar cuántos defensores tiene c6, qué ocurre después de una captura y si el adversario puede eliminar al alfil clavador. Contar atacantes y defensores sigue siendo obligatorio.
+
+[PAGINA]
+
+## 7. Método para reconocer clavadas
+
+Cuando examines una posición, recorre mentalmente columnas, filas y diagonales ocupadas por damas, torres y alfiles. Busca tres piezas alineadas: atacante -> pieza intermedia -> objetivo posterior.
+Después pregunta qué ocurriría si la pieza intermedia desapareciera. Si quedara el rey en jaque, la clavada es absoluta. Si quedara expuesta una pieza valiosa, es relativa.
+Finalmente, no confundas patrón con combinación. Reconocer una clavada genera candidatos; calcular las respuestas del rival determina si realmente puede explotarse.

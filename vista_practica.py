@@ -9,7 +9,7 @@ from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.button import Button
 from kivy.uix.label import Label
 
-from main import VistaTablero
+from main import BotonTextoAdaptativo, VistaTablero
 from utilidades import CalculadorRatingTactico
 
 
@@ -59,12 +59,14 @@ class VistaPracticaLeccion(VistaTablero):
             height=dp(60),
             spacing=0,
         )
-        self._btn_mostrar_solucion = Button(
+        self._btn_mostrar_solucion = BotonTextoAdaptativo(
             text="MOSTRAR SOLUCION",
             size_hint_x=None,
             width=0,
             opacity=0,
             disabled=True,
+            font_size_max="16sp",
+            margen_horizontal=dp(6),
             background_color=(1, 1, 1, 1),
             background_normal="assets/ui/button.png",
             background_down="assets/ui/button_down.png",

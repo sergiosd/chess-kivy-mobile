@@ -96,8 +96,10 @@ if __name__ == "__main__":
     # Ejecución aislada. Modifica las rutas según el sistema de archivos.
     # ruta_origen = os.path.join("lecciones", "00_El_ataque_doble.txt")
     # ruta_destino = os.path.join("lecciones", "tactica_doble_teoria.txt")
-    ruta_origen = os.path.join("lecciones", "01_La_pieza_indefensa.txt")
-    ruta_destino = os.path.join("lecciones", "tactica_indefensa_teoria.txt")
+    # ruta_origen = os.path.join("lecciones", "01_La_pieza_indefensa.txt")
+    # ruta_destino = os.path.join("lecciones", "tactica_indefensa_teoria.txt")
+    ruta_origen = os.path.join("lecciones", "02_La_clavada.txt")
+    ruta_destino = os.path.join("lecciones", "tactica_clavada_teoria.txt")
 
     # Creamos un archivo dummy de prueba si no existe la estructura
     if not os.path.exists(ruta_origen):

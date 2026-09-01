@@ -8,6 +8,25 @@
     "progreso_escuela": {
         "tac_02": true,
         "tac_03": true,
-        "tac_01": true
+        "tac_01": true,
+        "tac_04": true
+    },
+    "practica_lecciones": {
+        "tac_04": {
+            "rating": 22.764292079441546,
+            "resueltos": [
+                "yePPg",
+                "usAXi",
+                "iiFxR"
+            ],
+            "fallados": []
+        },
+        "tac_02": {
+            "rating": 0.0,
+            "resueltos": [],
+            "fallados": [
+                "NM3GQ"
+            ]
+        }
     }
 }
