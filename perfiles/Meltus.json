@@ -22,18 +22,29 @@
             "fallados": []
         },
         "tac_02": {
-            "rating": 16.874199939720725,
+            "rating": 33.27452990509858,
             "resueltos": [
                 "NYUep",
-                "O3p9p"
+                "O3p9p",
+                "PNvAF",
+                "OmR66",
+                "N7CY7",
+                "PFPYB",
+                "NjFlF"
             ],
             "fallados": [
                 "NM3GQ",
-                "N58ra"
+                "N58ra",
+                "MaDWG",
+                "R036r",
+                "MVLPl",
+                "QO6ZV",
+                "QKYBP",
+                "OYtct"
             ]
         },
         "tac_03": {
-            "rating": 36.71741566769807,
+            "rating": 47.55420416461345,
             "resueltos": [
                 "AcolY",
                 "A8J6h",
@@ -50,7 +61,11 @@
                 "9v0l5",
                 "Ap1P7",
                 "APo1D",
-                "B7Sw1"
+                "B7Sw1",
+                "AdADj",
+                "B6SzJ",
+                "BEVnz",
+                "AknYX"
             ],
             "fallados": [
                 "AWbFj",

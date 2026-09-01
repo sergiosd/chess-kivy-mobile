@@ -5,14 +5,50 @@ import unicodedata
 import chess
 from kivy.app import App
 from kivy.core.text import DEFAULT_FONT
+from kivy.graphics import Color, RoundedRectangle, Triangle
 from kivy.metrics import dp, sp
 from kivy.uix.boxlayout import BoxLayout
+from kivy.uix.image import Image
+from kivy.uix.relativelayout import RelativeLayout
 from kivy.uix.button import Button
 from kivy.uix.label import Label
 
 from main import BotonTextoAdaptativo, VistaTablero
 from utilidades import CalculadorRatingTactico
 from widgets_adaptativos import BotonTextoAdaptativo, TextoAdaptativo
+
+
+class BocadilloGuia(RelativeLayout):
+    """Dibuja un bocadillo adaptable para el personaje guía."""
+
+    def __init__(self, **kwargs) -> None:
+        """Inicializa el fondo redondeado y su cola lateral."""
+        super().__init__(**kwargs)
+        with self.canvas.before:
+            self._color_fondo = Color(1, 1, 1, 0.97)
+            self._cola = Triangle()
+            self._fondo = RoundedRectangle(radius=[dp(14)])
+
+        self.bind(pos=self._actualizar_canvas, size=self._actualizar_canvas)
+        self._actualizar_canvas()
+
+    def _actualizar_canvas(self, *_args) -> None:
+        """Mantiene el bocadillo ajustado al tamaño del widget."""
+        ancho_cola = dp(13)
+        ancho_fondo = max(0, self.width - ancho_cola)
+
+        self._fondo.pos = (self.x + ancho_cola, self.y)
+        self._fondo.size = (ancho_fondo, self.height)
+
+        centro_y = self.y + self.height * 0.48
+        self._cola.points = [
+            self.x + ancho_cola,
+            centro_y + dp(10),
+            self.x,
+            centro_y,
+            self.x + ancho_cola,
+            centro_y - dp(10),
+        ]
 
 
 class VistaPracticaLeccion(VistaTablero):
@@ -102,6 +138,7 @@ class VistaPracticaLeccion(VistaTablero):
         self._panel_pista: BoxLayout | None = None
         self._lbl_pista: TextoAdaptativo | None = None
         self._lbl_temas_pista: TextoAdaptativo | None = None
+        self._img_guia: Image | None = None
         super().__init__(habilitar_visor_solucion=False, **kwargs)
         self._configurar_controles_solucion()
         self._configurar_pista()
@@ -198,20 +235,34 @@ class VistaPracticaLeccion(VistaTablero):
         """Prepara la información y la fila de acciones de la práctica."""
         panel = self.ids.panel_inferior
         panel.spacing = dp(5)
+        panel.padding = (0, dp(8), 0, 0)
 
         estado = self.ids.lbl_estado
-        estado.size_hint_y = None
-        estado.height = dp(36)
         estado.font_name = DEFAULT_FONT
         estado.font_size_max = sp(18)
         estado.font_size_min = sp(14)
 
-        # El estado (TU TURNO / resultado) queda entre el título y el tablero.
-        if estado.parent is not self:
-            estado.parent.remove_widget(estado)
-            contenedor_tablero = self.ids.cuadricula_tablero.parent.parent
-            indice_tablero = self.children.index(contenedor_tablero)
-            self.add_widget(estado, index=indice_tablero + 1)
+        # Título y estado comparten la zona superior original. De este modo
+        # TU TURNO no reduce la altura disponible para el tablero.
+        mision = self.ids.lbl_mision
+        if estado.parent is panel:
+            indice_mision = self.children.index(mision)
+            panel.remove_widget(estado)
+            self.remove_widget(mision)
+
+            self._cabecera_practica = BoxLayout(
+                orientation="vertical",
+                size_hint_y=0.15,
+                spacing=dp(2),
+                padding=(0, 0, 0, dp(12)),
+            )
+
+            mision.size_hint_y = 0.62
+            estado.size_hint_y = 0.38
+
+            self._cabecera_practica.add_widget(mision)
+            self._cabecera_practica.add_widget(estado)
+            self.add_widget(self._cabecera_practica, index=indice_mision)
 
         self.ids.lbl_info.size_hint_y = None
         self.ids.lbl_info.height = dp(30)
@@ -225,44 +276,65 @@ class VistaPracticaLeccion(VistaTablero):
         self.ids.lbl_temas.opacity = 0
 
         self._panel_pista = BoxLayout(
-            orientation="vertical",
+            orientation="horizontal",
             size_hint_y=None,
-            height=dp(72),
-            padding=(dp(8), dp(3)),
+            height=dp(92),
+            padding=(dp(8), dp(3), dp(8), dp(3)),
+            spacing=dp(5),
+        )
+
+        self._img_guia = Image(
+            source="assets/ui/mascota_torre_guia.png",
+            size_hint_x=0.24,
+            allow_stretch=True,
+            keep_ratio=True,
+        )
+
+        bocadillo = BocadilloGuia(size_hint_x=0.76)
+        contenido_bocadillo = BoxLayout(
+            orientation="vertical",
+            padding=(dp(20), dp(7), dp(9), dp(6)),
             spacing=dp(2),
         )
+
         self._lbl_pista = TextoAdaptativo(
             text="",
             font_name="Michroma",
-            font_size=sp(12),
-            font_size_max=sp(12),
-            font_size_min=sp(9),
-            color=(0.95, 0.95, 0.95, 1),
+            font_size=sp(11),
+            font_size_max=sp(11),
+            font_size_min=sp(8),
+            color=(0.10, 0.12, 0.16, 1),
             bold=False,
-            halign="center",
+            halign="left",
             valign="middle",
-            size_hint_y=0.68,
+            size_hint_y=0.72,
         )
         self._lbl_pista.bind(
             size=lambda instance, size: setattr(instance, "text_size", size)
         )
+
         self._lbl_temas_pista = TextoAdaptativo(
             text="",
             font_name="Michroma",
-            font_size=sp(9),
-            font_size_max=sp(9),
-            font_size_min=sp(7),
-            color=(0.0, 0.8, 0.7, 1),
+            font_size=sp(8),
+            font_size_max=sp(8),
+            font_size_min=sp(6),
+            color=(0.0, 0.55, 0.55, 1),
             bold=False,
-            halign="center",
+            halign="left",
             valign="middle",
-            size_hint_y=0.32,
+            size_hint_y=0.28,
         )
         self._lbl_temas_pista.bind(
             size=lambda instance, size: setattr(instance, "text_size", size)
         )
-        self._panel_pista.add_widget(self._lbl_pista)
-        self._panel_pista.add_widget(self._lbl_temas_pista)
+
+        contenido_bocadillo.add_widget(self._lbl_pista)
+        contenido_bocadillo.add_widget(self._lbl_temas_pista)
+        bocadillo.add_widget(contenido_bocadillo)
+
+        self._panel_pista.add_widget(self._img_guia)
+        self._panel_pista.add_widget(bocadillo)
 
         indice_panel = panel.children.index(self._fila_acciones) + 1
         panel.add_widget(self._panel_pista, index=indice_panel)
@@ -282,6 +354,8 @@ class VistaPracticaLeccion(VistaTablero):
             bold=True,
         )
         self._btn_pista.bind(on_release=self.mostrar_pista)
+        self._btn_pista.disabled = True
+        self._btn_pista.opacity = 0.6
 
         # BoxLayout guarda los hijos en orden inverso. Insertarlo al final
         # mantiene visualmente PISTA a la izquierda y SIGUIENTE a la derecha.
@@ -291,51 +365,46 @@ class VistaPracticaLeccion(VistaTablero):
         )
 
     def _reiniciar_pista(self) -> None:
-        """Restaura la ayuda y el botón de pista para el puzzle activo."""
+        """Restaura el personaje guía para el puzzle activo."""
         self._pista_usada = False
         self._pista_usada_antes_resultado = False
 
         if self._panel_pista is not None:
-            self._panel_pista.height = dp(72)
+            self._panel_pista.height = dp(92)
             self._panel_pista.opacity = 1
-        if self._lbl_pista is not None:
-            self._lbl_pista.text = ""
-        if self._lbl_temas_pista is not None:
-            self._lbl_temas_pista.text = ""
+
+        self._actualizar_guia_puzzle()
 
         if self._btn_pista is None:
             return
 
         self._btn_pista.text = "PISTA"
         self._btn_pista.size_hint_x = 1
-        self._btn_pista.opacity = 1
-        self._btn_pista.disabled = False
-
-    def mostrar_pista(self, *_args) -> None:
-        """Muestra una pista y los temas crudos del puzzle en el panel de ayuda."""
-        estado_puzzle = self.gestor_ajedrez.estado_puzzle
-        if (
-            self._pista_usada
-            or self._btn_pista is None
-            or estado_puzzle not in {"JUGANDO", "VICTORIA"}
-        ):
-            return
-
-        info = self.gestor_ajedrez.info_puzzle or {}
-        temas_crudos = str(info.get("themes", "") or "").strip()
-        frase = self._construir_pista(temas_crudos)
-
-        self._pista_usada = True
-        if estado_puzzle == "JUGANDO":
-            self._pista_usada_antes_resultado = True
+        self._btn_pista.opacity = 0.6
         self._btn_pista.disabled = True
 
+    def _actualizar_guia_puzzle(self) -> None:
+        """Muestra desde el inicio el enunciado generado a partir de los temas."""
+        info = self.gestor_ajedrez.info_puzzle or {}
+        temas_crudos = str(info.get("themes", "") or "").strip()
+
         if self._lbl_pista is not None:
-            self._lbl_pista.text = frase
+            self._lbl_pista.text = (
+                self._construir_pista(temas_crudos)
+                if info
+                else ""
+            )
+
         if self._lbl_temas_pista is not None:
             self._lbl_temas_pista.text = (
-                f"TEMAS: {temas_crudos}" if temas_crudos else "TEMAS: --"
+                f"TEMAS: {temas_crudos}"
+                if temas_crudos
+                else ("TEMAS: --" if info else "")
             )
+
+    def mostrar_pista(self, *_args) -> None:
+        """Reserva el botón para una futura pista real."""
+        return
 
     def _construir_pista(self, temas_crudos: str) -> str:
         """Construye una pista breve usando solo temas con valor pedagógico."""
@@ -394,7 +463,8 @@ class VistaPracticaLeccion(VistaTablero):
 
         if self._btn_pista is not None:
             self._btn_pista.size_hint_x = 1
-            self._btn_pista.opacity = 1
+            self._btn_pista.opacity = 0.6
+            self._btn_pista.disabled = True
 
     def _restablecer_panel_practica(self) -> None:
         """Abandona la revisión y restaura el panel normal de práctica."""
@@ -713,9 +783,6 @@ class VistaPracticaLeccion(VistaTablero):
 
         self.gestor_perfiles.guardar_perfil(self.perfil_actual)
 
-        if victoria and not self._pista_usada and self._btn_pista is not None:
-            self._btn_pista.disabled = False
-
         return variacion, nuevo_rating
 
     def cargar_siguiente_puzzle(self) -> None:
@@ -766,6 +833,8 @@ class VistaPracticaLeccion(VistaTablero):
             )
             if self.gestor_ajedrez.estado_puzzle == "JUGANDO":
                 self.ids.lbl_estado.text = f"TU TURNO: {color_turno}"
+
+            self._actualizar_guia_puzzle()
 
     def formatear_resultado_puzzle(
         self,
