@@ -22,10 +22,13 @@
             "fallados": []
         },
         "tac_02": {
-            "rating": 0.0,
-            "resueltos": [],
+            "rating": 9.09090909090909,
+            "resueltos": [
+                "NYUep"
+            ],
             "fallados": [
-                "NM3GQ"
+                "NM3GQ",
+                "N58ra"
             ]
         }
     }

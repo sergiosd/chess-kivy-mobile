@@ -12,14 +12,15 @@ from kivy.uix.image import Image
 from kivy.uix.label import Label
 from kivy.uix.relativelayout import RelativeLayout
 from kivy.uix.anchorlayout import AnchorLayout
-from kivy.properties import StringProperty, BooleanProperty
+from kivy.properties import StringProperty, BooleanProperty, NumericProperty
 from kivy.app import App
 from kivy.factory import Factory
-from kivy.metrics import dp
+from kivy.metrics import dp, sp
 from kivy.graphics import Color, Rectangle, Line, Triangle
 from kivy.clock import Clock
 
 from utilidades import compilar_markdown_a_kivy
+from widgets_adaptativos import BotonTextoAdaptativo, TextoAdaptativo
 
 
 def texto_sin_acentos(texto: str) -> str:
@@ -31,6 +32,35 @@ def texto_sin_acentos(texto: str) -> str:
         if unicodedata.category(caracter) != "Mn"
     )
 
+
+
+class TextoLeccionAdaptativo(Label):
+    """Renderiza teoría ajustando la fuente al espacio disponible de la página."""
+
+    tamano_base_sp = NumericProperty(14.0)
+    escala_fuente = NumericProperty(1.0)
+
+    def __init__(self, **kwargs) -> None:
+        """Inicializa el texto fuente usado para regenerar el markup escalado."""
+        super().__init__(**kwargs)
+        self._texto_markdown = ""
+
+    def cargar_markdown(self, texto: str) -> None:
+        """Guarda el Markdown original y genera una primera versión visible."""
+        self._texto_markdown = texto
+        self.aplicar_escala(1.0)
+
+    def aplicar_escala(self, escala: float) -> None:
+        """Aplica una escala común al cuerpo y a las cabeceras de la lección."""
+        escala = max(0.1, float(escala))
+        self.escala_fuente = escala
+        self.font_size = sp(self.tamano_base_sp * escala)
+        self.text = compilar_markdown_a_kivy(
+            self._texto_markdown,
+            escala_fuente=escala,
+        )
+        self.texture_update()
+        self.height = self.texture_size[1]
 
 
 class PantallaEscuelaUnidades(Screen):
@@ -393,10 +423,79 @@ class PantallaVisorUnidad(Screen):
         Args:
             **kwargs: Metadatos requeridos por la espantosa arquitectura de Kivy.
         """
+        self._evento_ajuste_textos = None
         super().__init__(**kwargs)
         self.id_leccion_actual = ""
         self.paginas = []
         self.indice_pagina = 0
+
+    def on_kv_post(self, _base_widget) -> None:
+        """Vincula el ajuste de la teoría a los cambios reales del panel."""
+        self.ids.panel_contenido.bind(size=self._programar_ajuste_textos)
+
+    def _programar_ajuste_textos(self, *_args) -> None:
+        """Agrupa cambios de tamaño y recalcula la fuente una vez por frame."""
+        if self._evento_ajuste_textos is not None:
+            self._evento_ajuste_textos.cancel()
+        self._evento_ajuste_textos = Clock.schedule_once(
+            self._ajustar_textos_pagina,
+            0,
+        )
+
+    def _ajustar_textos_pagina(self, _dt: float) -> None:
+        """Busca la mayor escala que mantiene todo el contenido dentro del panel."""
+        self._evento_ajuste_textos = None
+
+        contenedor = self.ids.contenedor_contenido
+        panel = self.ids.panel_contenido
+        etiquetas = [
+            widget
+            for widget in contenedor.children
+            if isinstance(widget, TextoLeccionAdaptativo)
+        ]
+        if not etiquetas or contenedor.width <= 0 or panel.height <= 0:
+            return
+
+        padding = panel.padding
+        alto_disponible = max(
+            dp(1),
+            panel.height - padding[1] - padding[3],
+        )
+        spacing_total = contenedor.spacing * max(
+            0,
+            len(contenedor.children) - 1,
+        )
+
+        def aplicar_y_medir(escala: float) -> float:
+            for etiqueta in etiquetas:
+                etiqueta.aplicar_escala(escala)
+            return (
+                sum(widget.height for widget in contenedor.children)
+                + spacing_total
+            )
+
+        escala_minima = 0.60
+        escala_maxima = 1.00
+
+        if aplicar_y_medir(escala_maxima) <= alto_disponible:
+            return
+
+        mejor = escala_minima
+        if aplicar_y_medir(escala_minima) > alto_disponible:
+            escala_minima = 0.50
+            mejor = escala_minima
+
+        bajo = escala_minima
+        alto = escala_maxima
+        for _ in range(8):
+            candidato = (bajo + alto) / 2.0
+            if aplicar_y_medir(candidato) <= alto_disponible:
+                mejor = candidato
+                bajo = candidato
+            else:
+                alto = candidato
+
+        aplicar_y_medir(mejor)
 
     def cargar_contenido(
         self,
@@ -508,6 +607,8 @@ class PantallaVisorUnidad(Screen):
                     if subpartes[1].strip():
                         self._agregar_texto(contenedor, subpartes[1].strip())
 
+        self._programar_ajuste_textos()
+
         if self.indice_pagina == len(self.paginas) - 1 and self.id_leccion_actual:
             app = App.get_running_app()
             pantalla_unidades = app.sm.get_screen('escuela_unidades')
@@ -561,8 +662,8 @@ class PantallaVisorUnidad(Screen):
             contenedor: Widget de Kivy contenedor.
             texto (str): Teoría de ajedrez.
         """
-        etiqueta = Factory.TextoLeccion()
-        etiqueta.text = compilar_markdown_a_kivy(texto)
+        etiqueta = TextoLeccionAdaptativo()
+        etiqueta.cargar_markdown(texto)
         contenedor.add_widget(etiqueta)
 
     def _agregar_minitablero(self, contenedor, bloque_datos: str) -> None:
@@ -1189,7 +1290,7 @@ class PantallaMenuLeccion(Screen):
             from kivy.uix.button import Button
             from kivy.uix.label import Label
 
-            btn_prev = Button(
+            btn_prev = BotonTextoAdaptativo(
                 text="< ANT",
                 font_name='Michroma',
                 background_color=[0.2, 0.6, 0.8, 1],
@@ -1201,14 +1302,14 @@ class PantallaMenuLeccion(Screen):
             )
             btn_prev.bind(on_release=lambda x: self.cambiar_pagina_capitulos(-1))
 
-            lbl_pag = Label(
+            lbl_pag = TextoAdaptativo(
                 text=f"{self.pagina_actual_capitulos + 1} / {total_paginas}",
                 font_name='Michroma',
                 color=[0.1, 0.5, 0.6, 1],
                 bold=True
             )
 
-            btn_next = Button(
+            btn_next = BotonTextoAdaptativo(
                 text="SIG >",
                 font_name='Michroma',
                 background_color=[0.2, 0.8, 0.4, 1],

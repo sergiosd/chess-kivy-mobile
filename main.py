@@ -51,6 +51,11 @@ from utilidades import CalculadorElo
 from escuela_controladores import PantallaEscuelaTemas, PantallaEscuelaUnidades, PantallaVisorUnidad
 from escuela_controladores import PantallaVisorUnidad
 from utilidades_log import configurar_logger, LOG_DEBUG
+from widgets_adaptativos import (
+    BotonTextoAdaptativo,
+    PopupTextoAdaptativo,
+    TextoAdaptativo,
+)
 
 # Inicializa el espía a nivel de módulo
 log = configurar_logger("VistaLeccion")
@@ -84,93 +89,6 @@ if platform != 'android' and platform != 'ios':
 from kivy.uix.screenmanager import Screen
 from kivy.uix.button import Button
 from kivy.metrics import dp
-
-
-class BotonTextoAdaptativo(Button):
-    """Ajusta el texto al espacio real del botón sin depender de la plataforma."""
-
-    font_size_min = NumericProperty(sp(8))
-    font_size_max = NumericProperty(sp(18))
-    proporcion_altura_fuente = NumericProperty(0.38)
-    margen_horizontal = NumericProperty(dp(12))
-    margen_vertical = NumericProperty(dp(8))
-
-    def __init__(self, **kwargs) -> None:
-        """Configura el reajuste cuando cambian el texto o las dimensiones."""
-        super().__init__(**kwargs)
-        self._evento_ajuste = None
-        self.bind(
-            size=self._programar_ajuste,
-            text=self._programar_ajuste,
-            font_name=self._programar_ajuste,
-            bold=self._programar_ajuste,
-            italic=self._programar_ajuste,
-            font_size_min=self._programar_ajuste,
-            font_size_max=self._programar_ajuste,
-            proporcion_altura_fuente=self._programar_ajuste,
-            margen_horizontal=self._programar_ajuste,
-            margen_vertical=self._programar_ajuste,
-        )
-        self._programar_ajuste()
-
-    def _programar_ajuste(self, *_args) -> None:
-        """Agrupa cambios de layout y recalcula como máximo una vez por frame."""
-        if self._evento_ajuste is not None:
-            self._evento_ajuste.cancel()
-        self._evento_ajuste = Clock.schedule_once(self._ajustar_fuente, 0)
-
-    def _medir_texto(self, tamano_fuente: float) -> tuple[float, float]:
-        """Devuelve el tamaño natural del texto para una fuente concreta."""
-        etiqueta = CoreLabel(
-            text=self.text,
-            font_name=self.font_name,
-            font_size=tamano_fuente,
-            bold=self.bold,
-            italic=self.italic,
-        )
-        etiqueta.refresh()
-        return etiqueta.texture.size
-
-    def _ajustar_fuente(self, _dt: float) -> None:
-        """Busca el mayor tamaño que respeta el ancho y alto disponibles."""
-        self._evento_ajuste = None
-        if not self.text or self.width <= 0 or self.height <= 0:
-            return
-
-        ancho_disponible = max(1.0, self.width - (2 * self.margen_horizontal))
-        alto_disponible = max(1.0, self.height - (2 * self.margen_vertical))
-
-        limite_altura = self.height * self.proporcion_altura_fuente
-        maximo = max(
-            self.font_size_min,
-            min(self.font_size_max, limite_altura),
-        )
-        minimo = min(self.font_size_min, maximo)
-
-        ancho, alto = self._medir_texto(maximo)
-        if ancho <= ancho_disponible and alto <= alto_disponible:
-            self.font_size = maximo
-            return
-
-        ancho_minimo, alto_minimo = self._medir_texto(minimo)
-        bajo = minimo
-        if ancho_minimo > ancho_disponible or alto_minimo > alto_disponible:
-            bajo = 1.0
-
-        mejor = bajo
-        alto_busqueda = maximo
-
-        for _ in range(10):
-            candidato = (bajo + alto_busqueda) / 2.0
-            ancho, alto = self._medir_texto(candidato)
-
-            if ancho <= ancho_disponible and alto <= alto_disponible:
-                mejor = candidato
-                bajo = candidato
-            else:
-                alto_busqueda = candidato
-
-        self.font_size = mejor
 
 
 class PantallaCambiarUsuario(Screen):
@@ -359,7 +277,7 @@ class VistaTablero(BoxLayout):
             height=dp(48),
             spacing=dp(8),
         )
-        self._btn_solucion_anterior_general = Button(
+        self._btn_solucion_anterior_general = BotonTextoAdaptativo(
             text="<",
             size_hint_x=0.25,
             background_color=(1, 1, 1, 1),
@@ -372,7 +290,7 @@ class VistaTablero(BoxLayout):
             on_release=self.retroceder_solucion_general
         )
 
-        self._lbl_paso_solucion_general = Label(
+        self._lbl_paso_solucion_general = TextoAdaptativo(
             text="INICIO",
             size_hint_x=0.5,
             font_size="16sp",
@@ -385,7 +303,7 @@ class VistaTablero(BoxLayout):
             size=lambda instance, size: setattr(instance, "text_size", size)
         )
 
-        self._btn_solucion_siguiente_general = Button(
+        self._btn_solucion_siguiente_general = BotonTextoAdaptativo(
             text=">",
             size_hint_x=0.25,
             background_color=(1, 1, 1, 1),
@@ -1447,7 +1365,7 @@ class VistaLeccion(BoxLayout):
             p3 = (x2 - l * math.cos(angulo + math.pi / 6), y2 - l * math.sin(angulo + math.pi / 6))
             self.triangulo_error = Triangle(points=[x2, y2, p2[0], p2[1], p3[0], p3[1]])
 
-class PopupElo(Popup):
+class PopupElo(PopupTextoAdaptativo):
     """
     Controlador de la ventana emergente modal para mostrar la variación de ELO.
 
@@ -1478,7 +1396,7 @@ class PopupElo(Popup):
             self.mensaje = f"Movimiento incorrecto.\\n\\nTu ELO cae: [color=#cc3333][b]{variacion:.1f}[/b][/color] puntos."
 
 
-class PopupCoronacion(Popup):
+class PopupCoronacion(PopupTextoAdaptativo):
     """
     Ventana emergente modal (Popup) para seleccionar explícitamente la pieza de coronación.
 
@@ -1541,7 +1459,7 @@ class PopupCoronacion(Popup):
         self.dismiss()
 
 
-class PopupCambiarElo(Popup):
+class PopupCambiarElo(PopupTextoAdaptativo):
     """
     Controlador modal para sobrescribir la puntuación del jugador.
     """
@@ -1565,7 +1483,7 @@ class PopupCambiarElo(Popup):
         self.dismiss()
 
 
-class PopupBorrarRegistros(Popup):
+class PopupBorrarRegistros(PopupTextoAdaptativo):
     """
     Controlador modal para purgar el historial de tácticas completadas.
     """
@@ -1587,7 +1505,7 @@ class PopupBorrarRegistros(Popup):
         self.dismiss()
 
 
-class PopupBorrarUsuario(Popup):
+class PopupBorrarUsuario(PopupTextoAdaptativo):
     """
     Controlador modal para la destrucción irreversible de perfiles.
 
@@ -1628,7 +1546,7 @@ class PopupBorrarUsuario(Popup):
         self.dismiss()
 
 
-class PopupEnConstruccion(Popup):
+class PopupEnConstruccion(PopupTextoAdaptativo):
     """
     Ventana modal genérica para notificar al usuario sobre características futuras.
 
@@ -1670,14 +1588,14 @@ class PantallaGestionUsuarios(Screen):
             caja = BoxLayout(orientation='horizontal', size_hint_y=None, height=dp(50),
                              spacing=dp(5))
 
-            btn_nombre = Button(
+            btn_nombre = BotonTextoAdaptativo(
                 text=u,
                 background_color=(0.2, 0.6, 0.8, 1),
                 bold=True,
                 size_hint_x=0.7
             )
 
-            btn_borrar = Button(
+            btn_borrar = BotonTextoAdaptativo(
                 text='X',
                 background_color=(0.9, 0.2, 0.2, 1),
                 bold=True,

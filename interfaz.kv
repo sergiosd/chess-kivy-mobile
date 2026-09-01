@@ -33,7 +33,7 @@
         size_hint: 0.85, 0.85
         pos_hint: {'center_x': 0.5, 'center_y': 0.5}
 
-    Label:
+    TextoAdaptativo:
         text: root.texto_fila
         font_size: '9sp'
         bold: True
@@ -42,7 +42,7 @@
         size: self.texture_size
         pos_hint: {'x': 0.05, 'top': 0.95}
 
-    Label:
+    TextoAdaptativo:
         text: root.texto_col
         font_size: '9sp'
         bold: True
@@ -62,7 +62,7 @@
             pos: self.pos
             size: self.size
 
-    Label:
+    TextoAdaptativo:
         id: lbl_mision
         text: 'Puzzle ELO: --'
         font_size: '14sp'  # ¡Reducido de 28sp para mortales!
@@ -100,7 +100,7 @@
         size_hint_y: 0.35
         spacing: dp(8)
 
-        Label:
+        TextoAdaptativo:
             id: lbl_estado
             text: 'Esperando despliegue...'
             font_size: '18sp'  # Drástica reducción desde 22sp
@@ -112,7 +112,7 @@
             halign: 'center'
             valign: 'middle'
 
-        Label:
+        TextoAdaptativo:
             id: lbl_info
             text: 'Nivel: --'
             font_size: '12sp'
@@ -122,7 +122,7 @@
             halign: 'center'
             valign: 'middle'
 
-        Label:
+        TextoAdaptativo:
             id: lbl_temas
             text: ''
             font_size: '10sp'
@@ -142,22 +142,26 @@
         #    on_press: root.cargar_puzzle_prueba('0GKPM')
         # --------------------------------------------------------------------------------------
 
-        Button:
+        BotonTextoAdaptativo:
             id: btn_siguiente
             text: 'SIGUIENTE PUZZLE'
             size_hint_y: None
             height: dp(60)
+            font_size_max: '16sp'
+            margen_horizontal: dp(6)
             background_color: 1, 1, 1, 1
             background_normal: 'assets/ui/button.png'
             background_down: 'assets/ui/button_down.png'
             border: 0, 0, 0, 0
             on_press: root.cargar_siguiente_puzzle()
 
-        Button:
+        BotonTextoAdaptativo:
             id: btn_volver
             text: 'VOLVER AL MENU'
             size_hint_y: None
             height: dp(45)
+            font_size_max: '16sp'
+            margen_horizontal: dp(6)
             background_color: 0.8, 0.4, 0.1, 1
             background_normal: 'assets/ui/button.png'
             background_down: 'assets/ui/button_down.png'
@@ -174,7 +178,7 @@
         padding: dp(20)
         spacing: dp(15)
 
-        Label:
+        TextoAdaptativo:
             text: root.mensaje
             font_size: '18sp'
             markup: True
@@ -182,7 +186,7 @@
             valign: 'middle'
             text_size: self.size
 
-        Button:
+        BotonTextoAdaptativo:
             text: 'Aceptar'
             size_hint_y: None
             height: dp(50)
@@ -206,7 +210,7 @@
                 size: self.size
                 source: 'assets/ui/bg_2.png'
 
-        Label:
+        TextoAdaptativo:
             text: '[b]SELECCIONA OTRO PERFIL[/b]'
             markup: True
             halign: 'center'
@@ -268,16 +272,16 @@
         spacing: dp(15)
         padding: dp(10)
 
-        Button:
+        BotonTextoAdaptativo:
             background_normal: root.img_reina
             on_release: root.seleccionar_pieza('q')
-        Button:
+        BotonTextoAdaptativo:
             background_normal: root.img_torre
             on_release: root.seleccionar_pieza('r')
-        Button:
+        BotonTextoAdaptativo:
             background_normal: root.img_alfil
             on_release: root.seleccionar_pieza('b')
-        Button:
+        BotonTextoAdaptativo:
             background_normal: root.img_caballo
             on_release: root.seleccionar_pieza('n')
 
@@ -330,14 +334,14 @@
                     radius: [dp(15)] # Curvatura de las esquinas (¡Magia pura!)
 
             # Inyectamos el lable dentro de esta nueva jaula
-            Label:
+            TextoAdaptativo:
                 text: '[b]MIND CHESS[/b]'
                 markup: True
                 halign: 'center'
                 font_size: '24sp'
                 color: 0.1, 0.8, 0.8, 1
                 size_hint_y: 0.25
-            Label:
+            TextoAdaptativo:
                 id: lbl_usuario
                 text: 'USUARIO: '
                 font_size: '16sp'
@@ -370,7 +374,7 @@
                     radius: [dp(15)] # Curvatura de las esquinas (¡Magia pura!)
 
             # Inyectamos los botones dentro de esta nueva jaula
-            Button:
+            BotonTextoAdaptativo:
                 text: 'CONFIGURACION'
                 font_size: '12sp'
                 size_hint_y: None
@@ -382,7 +386,7 @@
                 bold: True
                 on_release: root.abrir_configuracion()
 
-            Button:
+            BotonTextoAdaptativo:
                 text: 'CAMBIAR USUARIO'
                 font_size: '12sp'
                 size_hint_y: None
@@ -397,7 +401,7 @@
                 bold: True
                 on_release: root.cambiar_usuario()
 
-            Button:
+            BotonTextoAdaptativo:
                 text: 'GESTION DE USUARIOS'
                 font_size: '12sp'
                 size_hint_y: None
@@ -409,7 +413,7 @@
                 bold: True
                 on_release: root.gestionar_usuarios()
 
-            Button:
+            BotonTextoAdaptativo:
                 text: 'PRACTICAR'
                 font_size: '12sp'
                 size_hint_y: None
@@ -423,7 +427,7 @@
             Widget:
                 size_hint_y: None
                 height: dp(20)
-            Button:
+            BotonTextoAdaptativo:
                 text: 'SALIR DEL JUEGO'
                 font_size: '12sp'
                 size_hint_y: None
@@ -448,12 +452,12 @@
         padding: dp(20)
         spacing: dp(15)
 
-        Label:
+        TextoAdaptativo:
             id: lbl_elo_actual
             text: 'ELO Actual: --'
             font_size: '18sp'
 
-        TextInput:
+        EntradaTextoAdaptativa:
             id: input_nuevo_elo
             hint_text: 'Introduce nuevo ELO'
             input_filter: 'int'
@@ -465,7 +469,7 @@
             height: dp(50)
             spacing: dp(15)
 
-            Button:
+            BotonTextoAdaptativo:
                 text: 'Cancelar'
                 background_color: 0.5, 0.5, 0.5, 1
                 background_normal: 'assets/ui/button.png'
@@ -473,7 +477,7 @@
                 border: 0, 0, 0, 0
                 on_release: root.dismiss()
 
-            Button:
+            BotonTextoAdaptativo:
                 text: 'Guardar'
                 background_color: 0.2, 0.8, 0.4, 1
                 background_normal: 'assets/ui/button.png'
@@ -493,12 +497,12 @@
         padding: dp(20)
         spacing: dp(15)
 
-        Label:
+        TextoAdaptativo:
             id: lbl_puzzles
             text: 'Puzzles resueltos: --'
             font_size: '18sp'
 
-        Label:
+        TextoAdaptativo:
             text: '¿Borrar absolutamente todo?'
             font_size: '14sp'
             color: 1, 0.2, 0.2, 1
@@ -510,7 +514,7 @@
             height: dp(50)
             spacing: dp(15)
 
-            Button:
+            BotonTextoAdaptativo:
                 text: 'Cancelar'
                 font_size: '14sp'
                 background_color: 0.5, 0.5, 0.9, 1
@@ -519,7 +523,7 @@
                 border: 0, 0, 0, 0
                 on_release: root.dismiss()
 
-            Button:
+            BotonTextoAdaptativo:
                 text: 'ELIMINAR'
                 font_size: '14sp'
                 background_color: 0.9, 0.5, 0.5, 1
@@ -564,7 +568,7 @@
                     pos: self.pos
                     size: self.size
                     radius: [dp(15)] # Curvatura de las esquinas (¡Magia pura!)
-            Label:
+            TextoAdaptativo:
                 id: lbl_usuario
                 text: 'Usuario'
                 font_size: '24sp'
@@ -594,7 +598,7 @@
                     pos: self.pos
                     size: self.size
                     radius: [dp(15)] # Curvatura de las esquinas (¡Magia pura!)
-            Button:
+            BotonTextoAdaptativo:
                 text: 'CAMBIAR ELO'
                 font_size: '10sp'
                 size_hint_y: None
@@ -606,7 +610,7 @@
                 bold: True
                 on_release: root.abrir_popup_elo()
 
-            Button:
+            BotonTextoAdaptativo:
                 text: 'BORRAR REGISTROS'
                 font_size: '10sp'
                 size_hint_y: None
@@ -623,7 +627,7 @@
                 size_hint_y: None
                 height: dp(20)
 
-            Button:
+            BotonTextoAdaptativo:
                 text: 'VOLVER AL MENU'
                 font_size: '10sp'
                 size_hint_y: None
@@ -677,7 +681,7 @@
                     pos: self.pos
                     size: self.size
                     radius: [dp(15)] # Curvatura de las esquinas (¡Magia pura!)
-            Label:
+            TextoAdaptativo:
                 id: lbl_usuario
                 text: 'Usuario'
                 font_size: '34sp'
@@ -701,7 +705,7 @@
                     pos: self.pos
                     size: self.size
                     radius: [dp(15)] # Curvatura de las esquinas (¡Magia pura!)
-            Button:
+            BotonTextoAdaptativo:
                 text: 'PUZZLES'
                 size_hint_y: None
                 height: dp(55)
@@ -712,7 +716,7 @@
                 bold: True
                 on_release: root.jugar_general()
 
-            Button:
+            BotonTextoAdaptativo:
                 text: 'TEMAS'
                 size_hint_y: None
                 height: dp(55)
@@ -723,7 +727,7 @@
                 bold: True
                 on_release: root.abrir_temas()
 
-            Button:
+            BotonTextoAdaptativo:
                 text: 'ESCUELA'
                 size_hint_y: None
                 height: dp(55)
@@ -737,7 +741,7 @@
             Widget:
                 size_hint_y: 0.1
 
-            Button:
+            BotonTextoAdaptativo:
                 text: 'VOLVER AL MENU'
                 size_hint_y: None
                 height: dp(55)
@@ -759,7 +763,7 @@
         padding: dp(20)
         spacing: dp(15)
 
-        Label:
+        TextoAdaptativo:
             text: root.mensaje
             font_size: '16sp'
             markup: True
@@ -771,7 +775,7 @@
             height: dp(50)
             spacing: dp(15)
 
-            Button:
+            BotonTextoAdaptativo:
                 text: 'Cancelar'
                 background_color: 0.5, 0.5, 0.5, 1
                 background_normal: 'assets/ui/button.png'
@@ -779,7 +783,7 @@
                 border: 0, 0, 0, 0
                 on_release: root.dismiss()
 
-            Button:
+            BotonTextoAdaptativo:
                 text: 'ELIMINAR'
                 background_color: 0.8, 0.2, 0.2, 1
                 background_normal: 'assets/ui/button.png'
@@ -802,7 +806,7 @@
                 size: self.size
                 source: 'assets/ui/bg_1.png'
 
-        Label:
+        TextoAdaptativo:
             text: '[b]GESTION DE USUARIOS[/b]'
             font_size: '18sp'
             markup: True
@@ -840,13 +844,13 @@
                 height: dp(45)
                 spacing: dp(10)
 
-                TextInput:
+                EntradaTextoAdaptativa:
                     id: input_nuevo_nombre
                     hint_text: 'Nuevo usuario...'
                     multiline: False
                     font_size: '12sp'
 
-                TextInput:
+                EntradaTextoAdaptativa:
                     id: input_nuevo_elo
                     hint_text: 'ELO'
                     input_filter: 'int'
@@ -854,7 +858,7 @@
                     font_size: '12sp'
                     size_hint_x: 0.5
 
-            Button:
+            BotonTextoAdaptativo:
                 text: 'CREAR PERFIL NUEVO'
                 size_hint_y: None
                 height: dp(50)
@@ -867,7 +871,7 @@
             Widget:
                 size_hint_y: None
                 height: dp(5)
-            Button:
+            BotonTextoAdaptativo:
                 text: 'VOLVER AL MENU'
                 size_hint_y: None
                 height: dp(50)
@@ -894,7 +898,7 @@
         padding: dp(20)
         spacing: dp(15)
 
-        Label:
+        TextoAdaptativo:
             text: 'Se esta forjando esta caracteristica en las fraguas del codigo.'
             halign: 'center'
             valign: 'middle'
@@ -904,7 +908,7 @@
             text_size: self.size
 
         # Inyectamos el botón que tu exquisito diseño exige
-        Button:
+        BotonTextoAdaptativo:
             text: 'VOLVER'
             size_hint_y: None
             height: dp(50)

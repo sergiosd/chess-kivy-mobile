@@ -146,7 +146,7 @@ class CalculadorRatingTactico:
             return "PUZZLE MUY DIFICIL"
         return "PUZZLE DE MAESTRO"
 
-def compilar_markdown_a_kivy(texto: str) -> str:
+def compilar_markdown_a_kivy(texto: str, escala_fuente: float = 1.0) -> str:
     """
     Transmuta la elegante sintaxis Markdown en el arcaico Kivy Markup.
 
@@ -155,6 +155,7 @@ def compilar_markdown_a_kivy(texto: str) -> str:
 
     Args:
         texto (str): Papiro digital con sintaxis Markdown pura.
+        escala_fuente (float): Factor aplicado a los tamaños de las cabeceras.
 
     Returns:
         str: Texto mutado con etiquetas '[b]', '[i]', '[size]' nativas de Kivy.
@@ -162,15 +163,20 @@ def compilar_markdown_a_kivy(texto: str) -> str:
     lineas = texto.split('\n')
     resultado = []
     contador_lista = 1
+    escala_fuente = max(0.1, float(escala_fuente))
+
+    tamano_h1 = 24.0 * escala_fuente
+    tamano_h2 = 20.0 * escala_fuente
+    tamano_h3 = 18.0 * escala_fuente
 
     for linea in lineas:
         # --- Cabeceras (Headings) ---
         if linea.startswith('# '):
-            linea = f"[size=24sp][b][color=#8F86F3]{linea[2:].strip()}[/color][/b][/size]"
+            linea = f"[size={tamano_h1:.2f}sp][b][color=#8F86F3]{linea[2:].strip()}[/color][/b][/size]"
         elif linea.startswith('## '):
-            linea = f"[size=20sp][b][color=#AFA6F3]{linea[3:].strip()}[/color][/b][/size]"
+            linea = f"[size={tamano_h2:.2f}sp][b][color=#AFA6F3]{linea[3:].strip()}[/color][/b][/size]"
         elif linea.startswith('### '):
-            linea = f"[size=18sp][b][color=#CFC6F3]{linea[4:].strip()}[/color][/b][/size]"
+            linea = f"[size={tamano_h3:.2f}sp][b][color=#CFC6F3]{linea[4:].strip()}[/color][/b][/size]"
 
         # --- Listas Desordenadas (Unordered Lists) ---
         elif linea.strip().startswith('- ') or linea.strip().startswith('* '):

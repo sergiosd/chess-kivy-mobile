@@ -11,6 +11,7 @@ from kivy.uix.label import Label
 
 from main import BotonTextoAdaptativo, VistaTablero
 from utilidades import CalculadorRatingTactico
+from widgets_adaptativos import BotonTextoAdaptativo, TextoAdaptativo
 
 
 class VistaPracticaLeccion(VistaTablero):
@@ -86,7 +87,7 @@ class VistaPracticaLeccion(VistaTablero):
             height=dp(48),
             spacing=dp(8),
         )
-        self._btn_solucion_anterior = Button(
+        self._btn_solucion_anterior = BotonTextoAdaptativo(
             text="<",
             size_hint_x=0.25,
             background_color=(1, 1, 1, 1),
@@ -97,7 +98,7 @@ class VistaPracticaLeccion(VistaTablero):
         )
         self._btn_solucion_anterior.bind(on_release=self.retroceder_solucion)
 
-        self._lbl_paso_solucion = Label(
+        self._lbl_paso_solucion = TextoAdaptativo(
             text="INICIO",
             size_hint_x=0.5,
             font_size="16sp",
@@ -110,7 +111,7 @@ class VistaPracticaLeccion(VistaTablero):
             size=lambda instance, size: setattr(instance, "text_size", size)
         )
 
-        self._btn_solucion_siguiente = Button(
+        self._btn_solucion_siguiente = BotonTextoAdaptativo(
             text=">",
             size_hint_x=0.25,
             background_color=(1, 1, 1, 1),
