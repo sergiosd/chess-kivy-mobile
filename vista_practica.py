@@ -4,7 +4,7 @@ import unicodedata
 
 import chess
 from kivy.app import App
-from kivy.metrics import dp
+from kivy.metrics import dp, sp
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.button import Button
 from kivy.uix.label import Label
@@ -16,6 +16,60 @@ from widgets_adaptativos import BotonTextoAdaptativo, TextoAdaptativo
 
 class VistaPracticaLeccion(VistaTablero):
     """Controlador gráfico especializado para los ejercicios tácticos de la Escuela."""
+
+    _PISTAS_MOTIVO = (
+        ("fork", "Busca un ataque doble"),
+        ("pin", "Busca cómo aprovechar una clavada"),
+        ("skewer", "Busca una enfilada"),
+        ("discoveredCheck", "Busca un jaque descubierto"),
+        ("discoveredAttack", "Busca un ataque descubierto"),
+        ("doubleCheck", "Busca la posibilidad de un jaque doble"),
+        ("capturingDefender", "Busca eliminar una pieza defensora"),
+        ("deflection", "Busca desviar una pieza defensora"),
+        ("attraction", "Busca atraer una pieza enemiga a una casilla vulnerable"),
+        ("clearance", "Busca despejar una línea o una casilla clave"),
+        ("interference", "Busca cortar la coordinación de las piezas defensoras"),
+        ("xRayAttack", "Busca un ataque de rayos X"),
+        ("hangingPiece", "Busca una pieza enemiga sin defensa suficiente"),
+        ("trappedPiece", "Busca cómo encerrar una pieza enemiga"),
+        ("intermezzo", "Antes de la jugada evidente, busca una jugada intermedia más fuerte"),
+        ("sacrifice", "Considera un sacrificio táctico"),
+        ("quietMove", "No busques solo jaques o capturas: considera una jugada tranquila"),
+        ("defensiveMove", "Busca la defensa más precisa"),
+        ("underPromotion", "Considera promocionar a una pieza distinta de la dama"),
+        ("promotion", "Busca una secuencia que permita promocionar un peón"),
+        ("enPassant", "Comprueba si la captura al paso es decisiva"),
+        ("castling", "Comprueba si el enroque cumple una función táctica"),
+        ("advancedPawn", "Busca cómo aprovechar el peón avanzado"),
+        ("passedPawn", "Busca cómo aprovechar el peón pasado"),
+        ("attackingF2F7", "Busca cómo explotar la debilidad de f2 o f7"),
+        ("exposedKing", "Busca cómo aprovechar la exposición del rey"),
+        ("kingsideAttack", "Busca cómo intensificar el ataque en el flanco de rey"),
+        ("queensideAttack", "Busca cómo intensificar el ataque en el flanco de dama"),
+        ("zugzwang", "Busca una jugada que deje al rival sin una respuesta útil"),
+        ("backRankMate", "Busca una red de mate aprovechando la última fila"),
+        ("smotheredMate", "Busca encerrar al rey con sus propias piezas y aprovechar el caballo"),
+        ("anastasiaMate", "Busca coordinar una pieza de largo alcance y un caballo contra el rey"),
+        ("arabianMate", "Busca coordinar torre y caballo alrededor del rey"),
+        ("bodenMate", "Busca una red de mate basada en diagonales cruzadas"),
+        ("doubleBishopMate", "Busca cómo coordinar los dos alfiles contra el rey"),
+    )
+    _TEMAS_MATE = frozenset({
+        "mate",
+        "mateIn1",
+        "mateIn2",
+        "mateIn3",
+        "mateIn4",
+        "mateIn5",
+    })
+    _PISTAS_MATE_ESPECIFICAS = frozenset({
+        "backRankMate",
+        "smotheredMate",
+        "anastasiaMate",
+        "arabianMate",
+        "bodenMate",
+        "doubleBishopMate",
+    })
 
     def __init__(
         self,
@@ -41,8 +95,16 @@ class VistaPracticaLeccion(VistaTablero):
         self._movimientos_revision: list[str] = []
         self._indice_revision = 0
         self._animacion_solucion_activa = False
+        self._pista_usada = False
+        self._btn_pista: BotonTextoAdaptativo | None = None
+        self._panel_pista: BoxLayout | None = None
+        self._lbl_pista: TextoAdaptativo | None = None
+        self._lbl_temas_pista: TextoAdaptativo | None = None
         super().__init__(habilitar_visor_solucion=False, **kwargs)
         self._configurar_controles_solucion()
+        self._configurar_pista()
+        self._reiniciar_pista()
+        self.actualizar_piezas_visuales()
 
     def _configurar_controles_solucion(self) -> None:
         """Prepara los controles de revisión sin alterar el layout global."""
@@ -56,9 +118,11 @@ class VistaPracticaLeccion(VistaTablero):
 
         self._fila_acciones = BoxLayout(
             orientation="horizontal",
+            size_hint_x=0.94,
             size_hint_y=None,
-            height=dp(60),
-            spacing=0,
+            height=dp(50),
+            spacing=dp(8),
+            pos_hint={"center_x": 0.5},
         )
         self._btn_mostrar_solucion = BotonTextoAdaptativo(
             text="MOSTRAR SOLUCION",
@@ -77,6 +141,8 @@ class VistaPracticaLeccion(VistaTablero):
         self._btn_mostrar_solucion.bind(on_release=self.mostrar_solucion)
 
         self._btn_siguiente.size_hint_x = 1
+        self._btn_siguiente.size_hint_y = 1
+        self._btn_siguiente.font_size_max = sp(14)
         self._fila_acciones.add_widget(self._btn_mostrar_solucion)
         self._fila_acciones.add_widget(self._btn_siguiente)
         panel.add_widget(self._fila_acciones, index=indice_original)
@@ -126,9 +192,178 @@ class VistaPracticaLeccion(VistaTablero):
         self._fila_navegacion.add_widget(self._lbl_paso_solucion)
         self._fila_navegacion.add_widget(self._btn_solucion_siguiente)
 
+    def _configurar_pista(self) -> None:
+        """Prepara la información y la fila de acciones de la práctica."""
+        panel = self.ids.panel_inferior
+        panel.spacing = dp(5)
+
+        self.ids.lbl_estado.size_hint_y = None
+        self.ids.lbl_estado.height = dp(32)
+        self.ids.lbl_estado.font_name = "Michroma"
+        self.ids.lbl_estado.font_size_max = sp(16)
+        self.ids.lbl_estado.font_size_min = sp(13)
+
+        self.ids.lbl_info.size_hint_y = None
+        self.ids.lbl_info.height = dp(28)
+        self.ids.lbl_info.font_name = "Michroma"
+        self.ids.lbl_info.font_size_max = sp(12)
+        self.ids.lbl_info.font_size_min = sp(10)
+
+        self.ids.lbl_temas.text = ""
+        self.ids.lbl_temas.size_hint_y = None
+        self.ids.lbl_temas.height = 0
+        self.ids.lbl_temas.opacity = 0
+
+        self._panel_pista = BoxLayout(
+            orientation="vertical",
+            size_hint_y=None,
+            height=dp(72),
+            padding=(dp(8), dp(3)),
+            spacing=dp(2),
+        )
+        self._lbl_pista = TextoAdaptativo(
+            text="",
+            font_name="Michroma",
+            font_size=sp(12),
+            font_size_max=sp(12),
+            font_size_min=sp(9),
+            color=(0.95, 0.95, 0.95, 1),
+            bold=False,
+            halign="center",
+            valign="middle",
+            size_hint_y=0.68,
+        )
+        self._lbl_pista.bind(
+            size=lambda instance, size: setattr(instance, "text_size", size)
+        )
+        self._lbl_temas_pista = TextoAdaptativo(
+            text="",
+            font_name="Michroma",
+            font_size=sp(9),
+            font_size_max=sp(9),
+            font_size_min=sp(7),
+            color=(0.0, 0.8, 0.7, 1),
+            bold=False,
+            halign="center",
+            valign="middle",
+            size_hint_y=0.32,
+        )
+        self._lbl_temas_pista.bind(
+            size=lambda instance, size: setattr(instance, "text_size", size)
+        )
+        self._panel_pista.add_widget(self._lbl_pista)
+        self._panel_pista.add_widget(self._lbl_temas_pista)
+
+        indice_panel = panel.children.index(self._fila_acciones) + 1
+        panel.add_widget(self._panel_pista, index=indice_panel)
+
+        self._btn_pista = BotonTextoAdaptativo(
+            text="PISTA",
+            size_hint_x=1,
+            size_hint_y=1,
+            font_size_max=sp(14),
+            margen_horizontal=dp(6),
+            background_color=(1, 1, 1, 1),
+            background_normal="assets/ui/button.png",
+            background_down="assets/ui/button_down.png",
+            background_disabled_normal="assets/ui/button.png",
+            disabled_color=(1, 1, 1, 1),
+            border=(0, 0, 0, 0),
+            bold=True,
+        )
+        self._btn_pista.bind(on_release=self.mostrar_pista)
+
+        # BoxLayout guarda los hijos en orden inverso. Insertarlo al final
+        # mantiene visualmente PISTA a la izquierda y SIGUIENTE a la derecha.
+        self._fila_acciones.add_widget(
+            self._btn_pista,
+            index=len(self._fila_acciones.children),
+        )
+
+    def _reiniciar_pista(self) -> None:
+        """Restaura la ayuda y el botón de pista para el puzzle activo."""
+        self._pista_usada = False
+
+        if self._panel_pista is not None:
+            self._panel_pista.height = dp(72)
+            self._panel_pista.opacity = 1
+        if self._lbl_pista is not None:
+            self._lbl_pista.text = ""
+        if self._lbl_temas_pista is not None:
+            self._lbl_temas_pista.text = ""
+
+        if self._btn_pista is None:
+            return
+
+        self._btn_pista.text = "PISTA"
+        self._btn_pista.size_hint_x = 1
+        self._btn_pista.opacity = 1
+        self._btn_pista.disabled = False
+
+    def mostrar_pista(self, *_args) -> None:
+        """Muestra una pista y los temas crudos del puzzle en el panel de ayuda."""
+        if (
+            self._pista_usada
+            or self._btn_pista is None
+            or self.gestor_ajedrez.estado_puzzle != "JUGANDO"
+        ):
+            return
+
+        info = self.gestor_ajedrez.info_puzzle or {}
+        temas_crudos = str(info.get("themes", "") or "").strip()
+        frase = self._construir_pista(temas_crudos)
+
+        self._pista_usada = True
+        self._btn_pista.disabled = True
+
+        if self._lbl_pista is not None:
+            self._lbl_pista.text = frase
+        if self._lbl_temas_pista is not None:
+            self._lbl_temas_pista.text = (
+                f"TEMAS: {temas_crudos}" if temas_crudos else "TEMAS: --"
+            )
+
+    def _construir_pista(self, temas_crudos: str) -> str:
+        """Construye una pista breve usando solo temas con valor pedagógico."""
+        temas = set((temas_crudos or "").split())
+
+        tema_motivo = None
+        frase = "Busca una jugada precisa"
+        for tema, pista in self._PISTAS_MOTIVO:
+            if tema in temas:
+                tema_motivo = tema
+                frase = pista
+                break
+
+        if (
+            temas & self._TEMAS_MATE
+            and tema_motivo not in self._PISTAS_MATE_ESPECIFICAS
+        ):
+            frase += " que conduzca al mate"
+        elif "crushing" in temas:
+            frase += " que te permita obtener una ventaja decisiva"
+        elif "advantage" in temas:
+            frase += " que te permita obtener ventaja"
+        elif "equality" in temas:
+            frase += " que te permita igualar la posición"
+
+        if "endgame" in temas:
+            frase += " en este final"
+        elif "middlegame" in temas:
+            frase += " en esta posición de medio juego"
+        elif "opening" in temas:
+            frase += " en esta apertura"
+
+        return frase.rstrip(".") + "."
+
     def _mostrar_acciones_fallo(self) -> None:
-        """Muestra Mostrar solución junto a Siguiente puzzle tras una derrota."""
-        self._fila_acciones.spacing = dp(8)
+        """Sustituye Pista por Mostrar solución tras una derrota."""
+        if self._btn_pista is not None:
+            self._btn_pista.size_hint_x = None
+            self._btn_pista.width = 0
+            self._btn_pista.opacity = 0
+            self._btn_pista.disabled = True
+
         self._btn_mostrar_solucion.size_hint_x = 1
         self._btn_mostrar_solucion.opacity = 1
         self._btn_mostrar_solucion.disabled = False
@@ -136,13 +371,16 @@ class VistaPracticaLeccion(VistaTablero):
         self._btn_siguiente.text = "SIGUIENTE PUZZLE"
 
     def _ocultar_boton_solucion(self) -> None:
-        """Oculta el acceso a la solución y devuelve el ancho al botón siguiente."""
-        self._fila_acciones.spacing = 0
+        """Oculta Mostrar solución y recupera la fila normal de práctica."""
         self._btn_mostrar_solucion.size_hint_x = None
         self._btn_mostrar_solucion.width = 0
         self._btn_mostrar_solucion.opacity = 0
         self._btn_mostrar_solucion.disabled = True
         self._btn_siguiente.size_hint_x = 1
+
+        if self._btn_pista is not None:
+            self._btn_pista.size_hint_x = 1
+            self._btn_pista.opacity = 1
 
     def _restablecer_panel_practica(self) -> None:
         """Abandona la revisión y restaura el panel normal de práctica."""
@@ -155,10 +393,14 @@ class VistaPracticaLeccion(VistaTablero):
         if self._fila_navegacion.parent is not None:
             self._fila_navegacion.parent.remove_widget(self._fila_navegacion)
 
-        for etiqueta in (self.ids.lbl_info, self.ids.lbl_temas):
-            etiqueta.size_hint_y = 1
-            etiqueta.opacity = 1
+        self.ids.lbl_info.size_hint_y = None
+        self.ids.lbl_info.height = dp(28)
+        self.ids.lbl_info.opacity = 1
+        self.ids.lbl_temas.size_hint_y = None
+        self.ids.lbl_temas.height = 0
+        self.ids.lbl_temas.opacity = 0
 
+        self._reiniciar_pista()
         self._ocultar_boton_solucion()
         self._btn_siguiente.disabled = False
         self._btn_siguiente.text = "SIGUIENTE PUZZLE"
@@ -212,6 +454,16 @@ class VistaPracticaLeccion(VistaTablero):
             etiqueta.size_hint_y = None
             etiqueta.height = 0
             etiqueta.opacity = 0
+
+        if self._panel_pista is not None:
+            self._panel_pista.height = 0
+            self._panel_pista.opacity = 0
+
+        if self._btn_pista is not None:
+            self._btn_pista.size_hint_x = None
+            self._btn_pista.width = 0
+            self._btn_pista.opacity = 0
+            self._btn_pista.disabled = True
 
         self.ids.lbl_estado.text = "REVISION DE LA SOLUCION"
         self.ids.lbl_estado.color = [0.1, 0.8, 0.8, 1]
@@ -387,28 +639,19 @@ class VistaPracticaLeccion(VistaTablero):
         ).upper()
         return f"{rango} EN {self._obtener_nombre_tactica()}"
 
-    def _obtener_bloque_inferior(self) -> str:
-        """Genera el bloque inferior con temas, rating y plies."""
+    def _obtener_linea_rating_dificultad(self) -> str:
+        """Devuelve rating local y dificultad visible sin metadatos técnicos."""
         info = self.gestor_ajedrez.info_puzzle or {}
         estado_local = self.perfil_actual["practica_lecciones"][self.id_leccion]
         rating_local = float(estado_local.get("rating", 0.0))
         plies = int(info.get("plies", len(info.get("moves", []))))
-
-        super().mostrar_temas_traducidos()
-        temas = self._texto_sin_acentos(self.ids.lbl_temas.text).upper().strip()
-
         dificultad_visible = CalculadorRatingTactico.obtener_dificultad_visible(plies)
-
-        lineas = []
-        if temas:
-            lineas.append(temas)
-        lineas.append(f"RATING: {rating_local:.1f} · {dificultad_visible}")
-        lineas.append(f"PUZZLE: {plies} PLIES")
-        return "\n".join(lineas)
+        return f"RATING: {int(round(rating_local))}% · {dificultad_visible}"
 
     def mostrar_temas_traducidos(self) -> None:
-        """Elimina acentos y añade rating y plies al bloque inferior."""
-        self.ids.lbl_temas.text = self._obtener_bloque_inferior()
+        """Mantiene ocultos los temas y refresca rating y dificultad."""
+        self.ids.lbl_temas.text = ""
+        self.ids.lbl_info.text = self._obtener_linea_rating_dificultad()
 
     def registrar_resultado_puzzle(self, victoria: bool) -> tuple[float, float]:
         """
@@ -417,6 +660,9 @@ class VistaPracticaLeccion(VistaTablero):
         La dificultad se deriva de la longitud real del puzzle en plies. El ELO
         externo del CSV queda únicamente como metadato y no afecta al cálculo.
         """
+        if self._btn_pista is not None:
+            self._btn_pista.disabled = True
+
         info = self.gestor_ajedrez.info_puzzle
         if not info:
             return 0.0, 0.0
@@ -432,6 +678,13 @@ class VistaPracticaLeccion(VistaTablero):
 
         estado_local = self.perfil_actual["practica_lecciones"][self.id_leccion]
         rating_actual = float(estado_local.get("rating", 0.0))
+
+        if victoria and self._pista_usada:
+            if id_puzzle and id_puzzle not in estado_local["resueltos"]:
+                estado_local["resueltos"].append(id_puzzle)
+            self.gestor_perfiles.guardar_perfil(self.perfil_actual)
+            return 0.0, rating_actual
+
         variacion, nuevo_rating = CalculadorRatingTactico.actualizar_rating(
             rating_actual,
             dificultad,
@@ -470,6 +723,8 @@ class VistaPracticaLeccion(VistaTablero):
             self.ids.lbl_estado.text = "MODULO COMPLETADO"
             self.ids.lbl_estado.color = [0, 1, 0, 1]
             self._btn_siguiente.disabled = True
+            if self._btn_pista is not None:
+                self._btn_pista.disabled = True
 
     def volver_menu(self) -> None:
         """Abandona la práctica y refresca el rating del menú de la lección."""
@@ -479,16 +734,14 @@ class VistaPracticaLeccion(VistaTablero):
         app.sm.current = "menu_leccion"
 
     def actualizar_piezas_visuales(self) -> None:
-        """Sincroniza tablero y textos de la práctica táctica."""
+        """Sincroniza tablero y muestra solo información útil para la práctica."""
         super().actualizar_piezas_visuales()
 
         info = self.gestor_ajedrez.info_puzzle
         if info:
             self.ids.lbl_mision.text = self._obtener_titulo_superior()
-            self.ids.lbl_info.text = self._texto_sin_acentos(
-                f"TACTICA ID: {info.get('id', '--')}"
-            ).upper()
-            self.mostrar_temas_traducidos()
+            self.ids.lbl_info.text = self._obtener_linea_rating_dificultad()
+            self.ids.lbl_temas.text = ""
 
             es_blancas = self.gestor_ajedrez.board.turn == chess.WHITE
             color_turno = (
@@ -506,17 +759,22 @@ class VistaPracticaLeccion(VistaTablero):
         nueva_puntuacion: float,
     ) -> str:
         """Genera el feedback visible del rating táctico de la lección."""
+        rating_visible = int(round(nueva_puntuacion))
+        if victoria and self._pista_usada:
+            return (
+                f"CORRECTO · PISTA UTILIZADA · "
+                f"RATING: {rating_visible}% (SIN CAMBIO)"
+            )
+
         rango = self._texto_sin_acentos(
             CalculadorRatingTactico.obtener_rango(nueva_puntuacion)
         ).upper()
         return (
             f"{'CORRECTO' if victoria else 'INCORRECTO'} "
-            f"RATING: {nueva_puntuacion:.1f} "
+            f"RATING: {rating_visible}% "
             f"({variacion:+.1f}) · {rango}"
         )
 
     def formatear_info_resultado(self, info: dict) -> str:
-        """Muestra el identificador del puzzle sin depender del ELO externo."""
-        return self._texto_sin_acentos(
-            f"TACTICA ID: {info.get('id', '--')}"
-        ).upper()
+        """Mantiene rating y dificultad en lugar del identificador del puzzle."""
+        return self._obtener_linea_rating_dificultad()
