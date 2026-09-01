@@ -46,12 +46,16 @@
 
         bold: True
 
-    CheckBox:
-        size_hint_x: 0.2
-        active: root.completada
-        # Inyección de verde radiactivo para contrastar con el blanco
+    TextoAdaptativo:
+        text: root.progreso_practica
+        font_name: 'Michroma'
+        font_size: '15sp'
         color: 0.1, 0.6, 0.2, 1
-        on_active: root.al_alternar(self.active)
+        size_hint_x: None
+        width: dp(55)
+        halign: 'right'
+        valign: 'middle'
+        bold: True
 
 <PantallaEscuelaTemas>:
     BoxLayout:
@@ -289,7 +293,7 @@
 <FilaTemaProgreso@ButtonBehavior+BoxLayout>:
     # Propiedades dinámicas inyectadas por el Controlador
     texto_tema: ''
-    porcentaje: 0
+    practica_superada: False
     id_tema: ''
     controlador: None
 
@@ -329,16 +333,12 @@
         valign: 'middle'
         bold: True
 
-    TextoAdaptativo:
-        text: f"{root.porcentaje}%"
-        font_name: 'Michroma'
-        font_size: '16sp'
-        color: (0.1, 0.6, 0.2, 1) if root.porcentaje == 100 else (0.8, 0.4, 0.1, 1)
+    CheckBox:
         size_hint_x: None
-        width: dp(55)
-        halign: 'right'
-        valign: 'middle'
-        bold: True
+        width: dp(40)
+        active: root.practica_superada
+        color: 0.1, 0.6, 0.2, 1
+        disabled: True
 
     TextoAdaptativo:
         text: '»'
@@ -400,7 +400,7 @@
             id: caja_paginacion
             orientation: 'horizontal'
             size_hint_y: None
-            height: dp(50)
+            height: 0
             spacing: dp(10)
             padding: [dp(10), 0]
 
@@ -453,11 +453,17 @@
         padding: [dp(10), 0]
         bold: True
 
-    CheckBox:
-        size_hint_x: 0.2
-        active: root.completada
+    TextoAdaptativo:
+        text: root.texto_estado
+        font_name: 'Michroma'
+        font_size: '15sp'
         color: 0.1, 0.6, 0.2, 1
-        disabled: True
+        size_hint_x: None
+        width: dp(55) if root.texto_estado else 0
+        opacity: 1 if root.texto_estado else 0
+        halign: 'right'
+        valign: 'middle'
+        bold: True
 
 <VistaLeccion>:
     orientation: 'vertical'

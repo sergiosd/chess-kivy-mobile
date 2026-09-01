@@ -472,8 +472,11 @@ class VistaPracticaLeccion(VistaTablero):
             self._btn_siguiente.disabled = True
 
     def volver_menu(self) -> None:
-        """Abandona la práctica y retrocede al menú de la lección."""
-        App.get_running_app().sm.current = "menu_leccion"
+        """Abandona la práctica y refresca el rating del menú de la lección."""
+        app = App.get_running_app()
+        menu_leccion = app.sm.get_screen("menu_leccion")
+        menu_leccion.refrescar_menu_principal()
+        app.sm.current = "menu_leccion"
 
     def actualizar_piezas_visuales(self) -> None:
         """Sincroniza tablero y textos de la práctica táctica."""

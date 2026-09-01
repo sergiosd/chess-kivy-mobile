@@ -13,7 +13,7 @@ from kivy.uix.image import Image
 from kivy.uix.label import Label
 from kivy.uix.relativelayout import RelativeLayout
 from kivy.uix.anchorlayout import AnchorLayout
-from kivy.properties import StringProperty, BooleanProperty, NumericProperty
+from kivy.properties import StringProperty, NumericProperty
 from kivy.app import App
 from kivy.factory import Factory
 from kivy.metrics import dp, sp
@@ -32,6 +32,21 @@ def texto_sin_acentos(texto: str) -> str:
         for caracter in normalizado
         if unicodedata.category(caracter) != "Mn"
     )
+
+
+def obtener_rating_practica(perfil: dict, id_leccion: str) -> float:
+    """Devuelve el rating 0-100 persistido para una práctica de lección."""
+    estado = perfil.get("practica_lecciones", {}).get(id_leccion, {})
+    try:
+        rating = float(estado.get("rating", 0.0))
+    except (TypeError, ValueError):
+        rating = 0.0
+    return max(0.0, min(100.0, rating))
+
+
+def obtener_rating_practica_visible(perfil: dict, id_leccion: str) -> int:
+    """Redondea el rating de práctica a un entero visible sin decimales."""
+    return int(obtener_rating_practica(perfil, id_leccion) + 0.5)
 
 
 
@@ -124,17 +139,23 @@ class PantallaEscuelaUnidades(Screen):
         self.ids.grid_unidades.clear_widgets()
 
         perfil = self._obtener_perfil_activo()
-        progreso_escuela = perfil.get('progreso_escuela', {})
 
         lecciones = self.TEMARIO.get(id_tema, [])
         for id_leccion, titulo in lecciones:
-            estado_completado = progreso_escuela.get(id_leccion, False)
+            tiene_practica = bool(
+                self.ARCHIVOS_LECCIONES.get(id_leccion, {}).get("practica")
+            )
+            progreso_practica = (
+                f"{obtener_rating_practica_visible(perfil, id_leccion)}%"
+                if tiene_practica
+                else "--"
+            )
             fila = FilaUnidadEscuela(
                 id_unidad=id_leccion,
                 controlador=self,
-                texto_unidad=texto_sin_acentos(titulo)
+                texto_unidad=texto_sin_acentos(titulo),
+                progreso_practica=progreso_practica,
             )
-            fila.completada = estado_completado
             self.ids.grid_unidades.add_widget(fila)
 
     def registrar_progreso(self, id_unidad: str, estado: bool) -> None:
@@ -257,37 +278,24 @@ class PantallaEscuelaUnidades(Screen):
         app.sm.current = 'escuela_visor'
 
 class FilaParteLeccion(ButtonBehavior, BoxLayout):
-    """
-    Componente físico para las opciones del menú de lección.
-    Reemplaza la inestable generación dinámica de Kivy.
-    """
+    """Representa una opción del menú de una lección."""
     texto_parte = StringProperty('')
-    completada = BooleanProperty(False)
+    texto_estado = StringProperty('')
+
 
 class FilaUnidadEscuela(ButtonBehavior, BoxLayout):
-    """
-    Componente visual interactivo que representa una lección del temario.
-
-    Hereda de ButtonBehavior para permitir que toda la fila sea pulsable,
-    orquestando la apertura del contenido teórico sin depender del checkbox.
-    """
+    """Representa una lección mostrando el rating de su práctica."""
     texto_unidad = StringProperty('')
-    completada = BooleanProperty(False)
+    progreso_practica = StringProperty('')
 
     def __init__(self, id_unidad: str, controlador, **kwargs) -> None:
-        """
-        Inicializa la fila inyectando su identificador y el gestor superior.
-        """
+        """Inicializa la fila con su identificador y controlador."""
         super().__init__(**kwargs)
         self.id_unidad = id_unidad
         self.controlador = controlador
 
-    def al_alternar(self, estado: bool) -> None:
-        """Intercepta el toque sobre la casilla booleana."""
-        self.controlador.registrar_progreso(self.id_unidad, estado)
-
     def on_release(self) -> None:
-        """Dispara la transición al menú intermedio al tocar la fila."""
+        """Abre el menú intermedio de la lección seleccionada."""
         self.controlador.abrir_menu_leccion(self.id_unidad, self.texto_unidad)
 
 
@@ -314,12 +322,9 @@ class PantallaEscuelaTemas(Screen):
         self.ids.grid_temas.clear_widgets()
         app = App.get_running_app()
 
-        # Recuperación del progreso del usuario activo
         nombre_usuario = app.gestor_perfiles.obtener_ultimo_usuario()
         perfil = app.gestor_perfiles.cargar_perfil(nombre_usuario) if nombre_usuario else {}
-        progreso_usuario = perfil.get('progreso_escuela', {})
 
-        # Obtenemos el temario definido en la pantalla de unidades
         pantalla_unidades = app.sm.get_screen('escuela_unidades')
         temario = pantalla_unidades.TEMARIO
 
@@ -331,21 +336,23 @@ class PantallaEscuelaTemas(Screen):
             'aperturas': 'Aperturas Basicas'
         }
 
-        # Generamos dinámicamente cada fila interactiva dentro del panel único
         for id_tema, titulo in nombres_temas.items():
             lecciones = temario.get(id_tema, [])
-            total = len(lecciones)
-
-            completadas = sum(
-                1 for id_leccion, _ in lecciones
-                if progreso_usuario.get(id_leccion, False)
+            lecciones_con_practica = [
+                id_leccion
+                for id_leccion, _ in lecciones
+                if pantalla_unidades.ARCHIVOS_LECCIONES.get(
+                    id_leccion, {}
+                ).get("practica")
+            ]
+            practica_superada = bool(lecciones_con_practica) and all(
+                obtener_rating_practica_visible(perfil, id_leccion) > 50
+                for id_leccion in lecciones_con_practica
             )
-
-            porcentaje = int((completadas / total * 100)) if total > 0 else 0
 
             fila = Factory.FilaTemaProgreso()
             fila.texto_tema = texto_sin_acentos(titulo)
-            fila.porcentaje = porcentaje
+            fila.practica_superada = practica_superada
             fila.id_tema = id_tema
             fila.controlador = self
 
@@ -1179,6 +1186,8 @@ class PantallaMenuLeccion(Screen):
         self.titulo_leccion = ""
         self.texto_crudo_teoria = ""
         self.capitulos_extraidos = []
+        self._tiene_ejemplos = True
+        self._tiene_practica = True
 
         self.pagina_actual_capitulos = 0
         self.elementos_por_pagina = 6
@@ -1197,6 +1206,8 @@ class PantallaMenuLeccion(Screen):
         """
         self.id_leccion = id_leccion
         self.titulo_leccion = titulo
+        self._tiene_ejemplos = tiene_ejemplos
+        self._tiene_practica = tiene_practica
 
         titulo_tema_visible = texto_sin_acentos(titulo_tema).upper()
         titulo_visible = texto_sin_acentos(titulo)
@@ -1219,6 +1230,10 @@ class PantallaMenuLeccion(Screen):
         contenedor = self.ids.grid_partes
         contenedor.clear_widgets()
 
+        caja_nav = self.ids.caja_paginacion
+        caja_nav.clear_widgets()
+        caja_nav.height = 0
+
         btn_teoria = FilaParteLeccion()
         btn_teoria.texto_parte = "Teoria"
         btn_teoria.bind(on_release=lambda x: self.desplegar_capitulos_teoria())
@@ -1233,8 +1248,25 @@ class PantallaMenuLeccion(Screen):
         if tiene_practica:
             btn_practica = FilaParteLeccion()
             btn_practica.texto_parte = "Practica"
+            btn_practica.texto_estado = f"{self._obtener_rating_actual()}%"
             btn_practica.bind(on_release=lambda x: self.abrir_practica())
             contenedor.add_widget(btn_practica)
+
+    def _obtener_rating_actual(self) -> int:
+        """Devuelve el rating visible de la práctica de la lección activa."""
+        app = App.get_running_app()
+        nombre_usuario = app.gestor_perfiles.obtener_ultimo_usuario()
+        if not nombre_usuario:
+            return 0
+        perfil = app.gestor_perfiles.cargar_perfil(nombre_usuario)
+        return obtener_rating_practica_visible(perfil, self.id_leccion)
+
+    def refrescar_menu_principal(self) -> None:
+        """Redibuja el menú raíz conservando las opciones de la lección activa."""
+        self.dibujar_menu_principal(
+            self._tiene_ejemplos,
+            self._tiene_practica,
+        )
 
     def desplegar_capitulos_teoria(self) -> None:
         """
@@ -1286,6 +1318,7 @@ class PantallaMenuLeccion(Screen):
 
         caja_nav = self.ids.caja_paginacion
         caja_nav.clear_widgets()
+        caja_nav.height = 0
 
         inicio = self.pagina_actual_capitulos * self.elementos_por_pagina
         fin = inicio + self.elementos_por_pagina
@@ -1303,8 +1336,7 @@ class PantallaMenuLeccion(Screen):
         total_paginas = (len(self.capitulos_extraidos) - 1) // self.elementos_por_pagina + 1
 
         if total_paginas > 1:
-            from kivy.uix.button import Button
-            from kivy.uix.label import Label
+            caja_nav.height = dp(50)
 
             btn_prev = BotonTextoAdaptativo(
                 text="< ANT",
@@ -1491,5 +1523,9 @@ class PantallaMenuLeccion(Screen):
         app.sm.current = 'juego'
 
     def volver_unidades(self) -> None:
-        """Provoca la rendición y devuelve al menú global."""
-        App.get_running_app().sm.current = 'escuela_unidades'
+        """Vuelve al tema y refresca los ratings visibles de sus lecciones."""
+        app = App.get_running_app()
+        pantalla_unidades = app.sm.get_screen('escuela_unidades')
+        if pantalla_unidades.tema_actual:
+            pantalla_unidades.cargar_tema(pantalla_unidades.tema_actual)
+        app.sm.current = 'escuela_unidades'

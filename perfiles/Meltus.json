@@ -22,13 +22,24 @@
             "fallados": []
         },
         "tac_02": {
-            "rating": 9.09090909090909,
+            "rating": 16.874199939720725,
             "resueltos": [
-                "NYUep"
+                "NYUep",
+                "O3p9p"
             ],
             "fallados": [
                 "NM3GQ",
                 "N58ra"
+            ]
+        },
+        "tac_03": {
+            "rating": 12.764292079441546,
+            "resueltos": [
+                "AcolY",
+                "A8J6h"
+            ],
+            "fallados": [
+                "AWbFj"
             ]
         }
     }
