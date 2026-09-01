@@ -4,6 +4,7 @@ import unicodedata
 
 import chess
 from kivy.app import App
+from kivy.core.text import DEFAULT_FONT
 from kivy.metrics import dp, sp
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.button import Button
@@ -96,6 +97,7 @@ class VistaPracticaLeccion(VistaTablero):
         self._indice_revision = 0
         self._animacion_solucion_activa = False
         self._pista_usada = False
+        self._pista_usada_antes_resultado = False
         self._btn_pista: BotonTextoAdaptativo | None = None
         self._panel_pista: BoxLayout | None = None
         self._lbl_pista: TextoAdaptativo | None = None
@@ -197,17 +199,25 @@ class VistaPracticaLeccion(VistaTablero):
         panel = self.ids.panel_inferior
         panel.spacing = dp(5)
 
-        self.ids.lbl_estado.size_hint_y = None
-        self.ids.lbl_estado.height = dp(32)
-        self.ids.lbl_estado.font_name = "Michroma"
-        self.ids.lbl_estado.font_size_max = sp(16)
-        self.ids.lbl_estado.font_size_min = sp(13)
+        estado = self.ids.lbl_estado
+        estado.size_hint_y = None
+        estado.height = dp(36)
+        estado.font_name = DEFAULT_FONT
+        estado.font_size_max = sp(18)
+        estado.font_size_min = sp(14)
+
+        # El estado (TU TURNO / resultado) queda entre el título y el tablero.
+        if estado.parent is not self:
+            estado.parent.remove_widget(estado)
+            contenedor_tablero = self.ids.cuadricula_tablero.parent.parent
+            indice_tablero = self.children.index(contenedor_tablero)
+            self.add_widget(estado, index=indice_tablero + 1)
 
         self.ids.lbl_info.size_hint_y = None
-        self.ids.lbl_info.height = dp(28)
-        self.ids.lbl_info.font_name = "Michroma"
-        self.ids.lbl_info.font_size_max = sp(12)
-        self.ids.lbl_info.font_size_min = sp(10)
+        self.ids.lbl_info.height = dp(30)
+        self.ids.lbl_info.font_name = DEFAULT_FONT
+        self.ids.lbl_info.font_size_max = sp(14)
+        self.ids.lbl_info.font_size_min = sp(11)
 
         self.ids.lbl_temas.text = ""
         self.ids.lbl_temas.size_hint_y = None
@@ -283,6 +293,7 @@ class VistaPracticaLeccion(VistaTablero):
     def _reiniciar_pista(self) -> None:
         """Restaura la ayuda y el botón de pista para el puzzle activo."""
         self._pista_usada = False
+        self._pista_usada_antes_resultado = False
 
         if self._panel_pista is not None:
             self._panel_pista.height = dp(72)
@@ -302,10 +313,11 @@ class VistaPracticaLeccion(VistaTablero):
 
     def mostrar_pista(self, *_args) -> None:
         """Muestra una pista y los temas crudos del puzzle en el panel de ayuda."""
+        estado_puzzle = self.gestor_ajedrez.estado_puzzle
         if (
             self._pista_usada
             or self._btn_pista is None
-            or self.gestor_ajedrez.estado_puzzle != "JUGANDO"
+            or estado_puzzle not in {"JUGANDO", "VICTORIA"}
         ):
             return
 
@@ -314,6 +326,8 @@ class VistaPracticaLeccion(VistaTablero):
         frase = self._construir_pista(temas_crudos)
 
         self._pista_usada = True
+        if estado_puzzle == "JUGANDO":
+            self._pista_usada_antes_resultado = True
         self._btn_pista.disabled = True
 
         if self._lbl_pista is not None:
@@ -660,9 +674,6 @@ class VistaPracticaLeccion(VistaTablero):
         La dificultad se deriva de la longitud real del puzzle en plies. El ELO
         externo del CSV queda únicamente como metadato y no afecta al cálculo.
         """
-        if self._btn_pista is not None:
-            self._btn_pista.disabled = True
-
         info = self.gestor_ajedrez.info_puzzle
         if not info:
             return 0.0, 0.0
@@ -679,7 +690,7 @@ class VistaPracticaLeccion(VistaTablero):
         estado_local = self.perfil_actual["practica_lecciones"][self.id_leccion]
         rating_actual = float(estado_local.get("rating", 0.0))
 
-        if victoria and self._pista_usada:
+        if victoria and self._pista_usada_antes_resultado:
             if id_puzzle and id_puzzle not in estado_local["resueltos"]:
                 estado_local["resueltos"].append(id_puzzle)
             self.gestor_perfiles.guardar_perfil(self.perfil_actual)
@@ -701,6 +712,10 @@ class VistaPracticaLeccion(VistaTablero):
                 estado_local["fallados"].append(id_puzzle)
 
         self.gestor_perfiles.guardar_perfil(self.perfil_actual)
+
+        if victoria and not self._pista_usada and self._btn_pista is not None:
+            self._btn_pista.disabled = False
+
         return variacion, nuevo_rating
 
     def cargar_siguiente_puzzle(self) -> None:
@@ -760,7 +775,7 @@ class VistaPracticaLeccion(VistaTablero):
     ) -> str:
         """Genera el feedback visible del rating táctico de la lección."""
         rating_visible = int(round(nueva_puntuacion))
-        if victoria and self._pista_usada:
+        if victoria and self._pista_usada_antes_resultado:
             return (
                 f"CORRECTO · PISTA UTILIZADA · "
                 f"RATING: {rating_visible}% (SIN CAMBIO)"
