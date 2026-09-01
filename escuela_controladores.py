@@ -1,4 +1,5 @@
 import os
+import time
 import math
 import chess
 import json
@@ -424,6 +425,7 @@ class PantallaVisorUnidad(Screen):
             **kwargs: Metadatos requeridos por la espantosa arquitectura de Kivy.
         """
         self._evento_ajuste_textos = None
+        self._ultima_navegacion = 0.0
         super().__init__(**kwargs)
         self.id_leccion_actual = ""
         self.paginas = []
@@ -614,8 +616,19 @@ class PantallaVisorUnidad(Screen):
             pantalla_unidades = app.sm.get_screen('escuela_unidades')
             pantalla_unidades.registrar_progreso(self.id_leccion_actual, True)
 
+    def _aceptar_navegacion(self) -> bool:
+        """Ignora eventos duplicados generados por un mismo toque físico."""
+        ahora = time.monotonic()
+        if ahora - self._ultima_navegacion < 0.35:
+            return False
+        self._ultima_navegacion = ahora
+        return True
+
     def pagina_anterior(self) -> None:
         """Retrocede una página o salta al final del capítulo anterior."""
+        if not self._aceptar_navegacion():
+            return
+
         if self.indice_pagina > 0:
             self.indice_pagina -= 1
             self.mostrar_pagina()
@@ -632,6 +645,9 @@ class PantallaVisorUnidad(Screen):
         Usurpa el controlador maestro si el papiro digital se ha consumido por completo
         para encadenar automáticamente el siguiente fragmento capitular.
         """
+        if not self._aceptar_navegacion():
+            return
+
         pagina_actual = self.paginas[self.indice_pagina]
 
         if pagina_actual.get('puzzle'):
