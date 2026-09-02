@@ -285,7 +285,7 @@ class PuzzleManager:
                     movimientos = fila[2].split()
                     plies = len(movimientos)
 
-                    if plies == 4:
+                    if plies in (2, 4):
                         grupo = "4"
                     elif plies == 6:
                         grupo = "6"

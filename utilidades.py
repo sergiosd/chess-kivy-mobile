@@ -43,6 +43,8 @@ class CalculadorRatingTactico:
 
     K = 10.0
     ESCALA_PROBABILIDAD = 20.0
+    GANANCIA_MINIMA_VICTORIA = 1.0
+    PERDIDA_MAXIMA_DERROTA = 2.0
 
     DIFICULTAD_POR_PLIES = {
         2: 10.0,
@@ -88,7 +90,12 @@ class CalculadorRatingTactico:
             )
         )
         resultado = 1.0 if victoria else 0.0
-        return cls.K * (resultado - esperabilidad)
+        variacion = cls.K * (resultado - esperabilidad)
+
+        if victoria:
+            return max(cls.GANANCIA_MINIMA_VICTORIA, variacion)
+
+        return max(-cls.PERDIDA_MAXIMA_DERROTA, variacion)
 
     @classmethod
     def actualizar_rating(cls, rating_usuario: float, dificultad: float,
