@@ -55,6 +55,15 @@ class BocadilloGuia(BoxLayout):
 class VistaPracticaLeccion(VistaTablero):
     """Controlador gráfico especializado para los ejercicios tácticos de la Escuela."""
 
+    _NOMBRES_PIEZAS_PISTA = {
+        chess.PAWN: "un peón",
+        chess.KNIGHT: "un caballo",
+        chess.BISHOP: "un alfil",
+        chess.ROOK: "una torre",
+        chess.QUEEN: "una dama",
+        chess.KING: "el rey",
+    }
+
     _PISTAS_MOTIVO = (
         ("fork", "Busca un ataque doble"),
         ("pin", "Busca cómo aprovechar una clavada"),
@@ -421,8 +430,20 @@ class VistaPracticaLeccion(VistaTablero):
 
         self._btn_pista.text = "PISTA"
         self._btn_pista.size_hint_x = 1
-        self._btn_pista.opacity = 0.6
-        self._btn_pista.disabled = True
+        self._actualizar_estado_boton_pista()
+
+    def _actualizar_estado_boton_pista(self) -> None:
+        """Habilita Pista solo cuando corresponde mover al jugador."""
+        if self._btn_pista is None:
+            return
+
+        disponible = (
+            not self._modo_solucion
+            and self.gestor_ajedrez.obtener_pieza_movimiento_esperado_jugador()
+            is not None
+        )
+        self._btn_pista.disabled = not disponible
+        self._btn_pista.opacity = 1.0 if disponible else 0.6
 
     def _actualizar_guia_puzzle(self) -> None:
         """Muestra desde el inicio el enunciado generado a partir de los temas."""
@@ -444,8 +465,24 @@ class VistaPracticaLeccion(VistaTablero):
             )
 
     def mostrar_pista(self, *_args) -> None:
-        """Reserva el botón para una futura pista real."""
-        return
+        """Indica qué tipo de pieza debe mover el jugador en este ply."""
+        if self._modo_solucion or self._lbl_pista is None:
+            return
+
+        pieza = self.gestor_ajedrez.obtener_pieza_movimiento_esperado_jugador()
+        if pieza is None:
+            self._actualizar_estado_boton_pista()
+            return
+
+        nombre_pieza = self._NOMBRES_PIEZAS_PISTA.get(pieza.piece_type)
+        if not nombre_pieza:
+            return
+
+        self._pista_usada = True
+        self._pista_usada_antes_resultado = True
+        self._lbl_pista.text = (
+            f"Pista: busca la siguiente jugada con {nombre_pieza}."
+        )
 
     def _construir_pista(self, temas_crudos: str) -> str:
         """Construye una pista breve usando solo temas con valor pedagógico."""
@@ -504,8 +541,7 @@ class VistaPracticaLeccion(VistaTablero):
 
         if self._btn_pista is not None:
             self._btn_pista.size_hint_x = 1
-            self._btn_pista.opacity = 0.6
-            self._btn_pista.disabled = True
+            self._actualizar_estado_boton_pista()
 
     def _restablecer_panel_practica(self) -> None:
         """Abandona la revisión y restaura el panel normal de práctica."""
@@ -537,6 +573,7 @@ class VistaPracticaLeccion(VistaTablero):
 
         estado_anterior = self.gestor_ajedrez.estado_puzzle
         super().al_tocar_casilla(nombre_casilla)
+        self._actualizar_estado_boton_pista()
 
         if (
             estado_anterior != "DERROTA"
@@ -876,6 +913,8 @@ class VistaPracticaLeccion(VistaTablero):
                 self.ids.lbl_estado.text = f"TU TURNO: {color_turno}"
 
             self._actualizar_guia_puzzle()
+
+        self._actualizar_estado_boton_pista()
 
     def formatear_resultado_puzzle(
         self,

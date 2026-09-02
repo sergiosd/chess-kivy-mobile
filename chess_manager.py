@@ -14,6 +14,7 @@ class ChessManager:
         self.casilla_seleccionada = None
         self.movimientos_validos = []
         self.solucion = []
+        self.color_jugador = None
 
         # Rastrea en qué movimiento de la solución nos encontramos[cite: 1]
         self.paso_actual = 0
@@ -53,10 +54,41 @@ class ChessManager:
             # En la Escuela, el tablero está congelado esperando tu genialidad
             self.paso_actual = 0
 
+        self.color_jugador = self.board.turn
         self.casilla_seleccionada = None
         self.movimientos_validos = []
         self.estado_puzzle = "JUGANDO"
         self.movimiento_fallado = ""
+
+    def obtener_pieza_movimiento_esperado_jugador(self) -> chess.Piece | None:
+        """Devuelve la pieza que debe mover el jugador en el paso actual.
+
+        Returns:
+            chess.Piece | None: Pieza situada en la casilla de origen del
+                siguiente movimiento esperado, o None si no es el turno del
+                jugador o el puzzle ya no está activo.
+        """
+        if (
+            self.estado_puzzle != "JUGANDO"
+            or self.paso_actual >= len(self.solucion)
+            or self.color_jugador is None
+            or self.board.turn != self.color_jugador
+        ):
+            return None
+
+        try:
+            movimiento = chess.Move.from_uci(self.solucion[self.paso_actual])
+        except (ValueError, TypeError):
+            return None
+
+        if movimiento not in self.board.legal_moves:
+            return None
+
+        pieza = self.board.piece_at(movimiento.from_square)
+        if pieza is None or pieza.color != self.color_jugador:
+            return None
+
+        return pieza
 
     def ejecutar_movimiento_enemigo(self):
         """

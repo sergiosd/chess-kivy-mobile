@@ -4,7 +4,8 @@
             ["tac_01", "Introduccion a la tactica"],
             ["tac_02", "Pieza indefensa o colgada"],
             ["tac_03", "El ataque doble"],
-            ["tac_04", "La clavada"]
+            ["tac_04", "La clavada"],
+            ["tac_05", "Piezas atr"]
         ],
         "mates": [
             ["mat_01", "Mate del pasillo"],
