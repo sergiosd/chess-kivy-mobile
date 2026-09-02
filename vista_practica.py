@@ -4,6 +4,7 @@ import unicodedata
 
 import chess
 from kivy.app import App
+from kivy.clock import Clock
 from kivy.core.text import DEFAULT_FONT
 from kivy.graphics import Color, RoundedRectangle, Triangle
 from kivy.metrics import dp, sp
@@ -18,7 +19,7 @@ from utilidades import CalculadorRatingTactico
 from widgets_adaptativos import BotonTextoAdaptativo, TextoAdaptativo
 
 
-class BocadilloGuia(RelativeLayout):
+class BocadilloGuia(BoxLayout):
     """Dibuja un bocadillo adaptable para el personaje guía."""
 
     def __init__(self, **kwargs) -> None:
@@ -159,7 +160,7 @@ class VistaPracticaLeccion(VistaTablero):
             orientation="horizontal",
             size_hint_x=0.94,
             size_hint_y=None,
-            height=dp(50),
+            height=dp(48),
             spacing=dp(8),
             pos_hint={"center_x": 0.5},
         )
@@ -234,27 +235,31 @@ class VistaPracticaLeccion(VistaTablero):
     def _configurar_pista(self) -> None:
         """Prepara la información y la fila de acciones de la práctica."""
         panel = self.ids.panel_inferior
-        panel.spacing = dp(5)
-        panel.padding = (0, dp(8), 0, 0)
+        panel.size_hint_y = None
+        panel.height = dp(230)
+        panel.spacing = dp(4)
+        panel.padding = (0, 0, 0, 0)
 
         estado = self.ids.lbl_estado
         estado.font_name = DEFAULT_FONT
         estado.font_size_max = sp(18)
         estado.font_size_min = sp(14)
 
-        # Título y estado comparten la zona superior original. De este modo
-        # TU TURNO no reduce la altura disponible para el tablero.
+        # Título y estado comparten la zona superior original. Los widgets de
+        # ids son WeakProxy, por lo que no se compara el padre mediante ``is``.
         mision = self.ids.lbl_mision
-        if estado.parent is panel:
+        if estado.parent is not None:
+            estado.parent.remove_widget(estado)
+
+        if mision.parent is self:
             indice_mision = self.children.index(mision)
-            panel.remove_widget(estado)
             self.remove_widget(mision)
 
             self._cabecera_practica = BoxLayout(
                 orientation="vertical",
                 size_hint_y=0.15,
-                spacing=dp(2),
-                padding=(0, 0, 0, dp(12)),
+                spacing=dp(4),
+                padding=(0, 0, 0, dp(10)),
             )
 
             mision.size_hint_y = 0.62
@@ -265,7 +270,7 @@ class VistaPracticaLeccion(VistaTablero):
             self.add_widget(self._cabecera_practica, index=indice_mision)
 
         self.ids.lbl_info.size_hint_y = None
-        self.ids.lbl_info.height = dp(30)
+        self.ids.lbl_info.height = dp(28)
         self.ids.lbl_info.font_name = DEFAULT_FONT
         self.ids.lbl_info.font_size_max = sp(14)
         self.ids.lbl_info.font_size_min = sp(11)
@@ -274,27 +279,42 @@ class VistaPracticaLeccion(VistaTablero):
         self.ids.lbl_temas.size_hint_y = None
         self.ids.lbl_temas.height = 0
         self.ids.lbl_temas.opacity = 0
+        if self.ids.lbl_temas.parent is panel:
+            panel.remove_widget(self.ids.lbl_temas)
+
+        self.ids.btn_volver.height = dp(42)
+
+        # El tablero se dimensiona contra la altura REAL del AnchorLayout.
+        # El KV original lo calcula sólo con root.width/root.height y puede
+        # resultar más alto que su contenedor, invadiendo el panel inferior.
+        marco_tablero = self.ids.cuadricula_tablero.parent
+        contenedor_tablero = marco_tablero.parent
+        contenedor_tablero.bind(
+            size=self._programar_ajuste_tablero_practica
+        )
+        self.bind(size=self._programar_ajuste_tablero_practica)
+        Clock.schedule_once(self._ajustar_tablero_practica, 0)
 
         self._panel_pista = BoxLayout(
             orientation="horizontal",
             size_hint_y=None,
-            height=dp(92),
-            padding=(dp(8), dp(3), dp(8), dp(3)),
-            spacing=dp(5),
+            height=dp(100),
+            padding=(0, dp(4), 0, dp(4)),
+            spacing=dp(6),
         )
 
         self._img_guia = Image(
-            source="assets/ui/mascota_torre_guia.png",
-            size_hint_x=0.24,
-            allow_stretch=True,
-            keep_ratio=True,
+            source="assets/ui/mascota_torre_guia_medio_cuerpo.png",
+            size_hint_x=None,
+            width=dp(106),
+            fit_mode="contain",
         )
 
-        bocadillo = BocadilloGuia(size_hint_x=0.76)
+        bocadillo = BocadilloGuia()
         contenido_bocadillo = BoxLayout(
             orientation="vertical",
-            padding=(dp(20), dp(7), dp(9), dp(6)),
-            spacing=dp(2),
+            padding=(dp(22), dp(9), dp(10), dp(8)),
+            spacing=dp(3),
         )
 
         self._lbl_pista = TextoAdaptativo(
@@ -364,13 +384,34 @@ class VistaPracticaLeccion(VistaTablero):
             index=len(self._fila_acciones.children),
         )
 
+    def _programar_ajuste_tablero_practica(self, *_args) -> None:
+        """Programa el ajuste del tablero después de que Kivy resuelva el layout."""
+        Clock.schedule_once(self._ajustar_tablero_practica, 0)
+
+    def _ajustar_tablero_practica(self, _dt: float) -> None:
+        """Impide que el tablero sobresalga sobre el panel inferior."""
+        cuadricula = self.ids.cuadricula_tablero
+        marco = cuadricula.parent
+        contenedor = marco.parent
+
+        if contenedor.height <= 0 or self.width <= 0:
+            return
+
+        lado = min(
+            max(1.0, self.width - dp(40)),
+            max(1.0, contenedor.height - dp(6)),
+        )
+
+        cuadricula.size = (lado, lado)
+        marco.size = (lado + dp(4), lado + dp(4))
+
     def _reiniciar_pista(self) -> None:
         """Restaura el personaje guía para el puzzle activo."""
         self._pista_usada = False
         self._pista_usada_antes_resultado = False
 
         if self._panel_pista is not None:
-            self._panel_pista.height = dp(92)
+            self._panel_pista.height = dp(100)
             self._panel_pista.opacity = 1
 
         self._actualizar_guia_puzzle()
